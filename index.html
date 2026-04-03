@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Caption Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 16px;
+  color: #333;
+}
+
+.container {
+  max-width: 1800px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  height: calc(100vh - 32px);
+}
+
+/* ── Left Panel ── */
+.left-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e8eaf0;
+  overflow: hidden;
+}
+
+.left-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+}
+
+.panel-title {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Upload Zone */
+.upload-zone {
+  border: 2.5px dashed #c5cae9;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #f5f7ff;
+  margin-bottom: 16px;
+}
+
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: #667eea;
+  background: #eef1ff;
+  transform: scale(1.01);
+}
+
+.upload-zone.has-video {
+  padding: 12px 20px;
+  border-style: solid;
+  border-color: #c5cae9;
+  background: #fafbff;
+}
+
+.upload-icon { font-size: 36px; margin-bottom: 8px; }
+.upload-text { font-size: 15px; color: #667eea; font-weight: 500; }
+.upload-hint { font-size: 12px; color: #999; margin-top: 4px; }
+.upload-zone.has-video .upload-icon { font-size: 18px; margin-bottom: 0; }
+.upload-zone.has-video .upload-text { font-size: 13px; }
+.upload-zone.has-video .upload-hint { display: none; }
+
+#fileInput { display: none; }
+
+/* Video Player */
+.video-wrap {
+  display: none;
+  margin-bottom: 16px;
+}
+
+.video-wrap.visible { display: block; }
+
+.video-wrap video {
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  background: #000;
+  display: block;
+}
+
+/* Timeline */
+.timeline-box {
+  display: none;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fc;
+  border-radius: 12px;
+  border: 1px solid #e8eaf0;
+}
+
+.timeline-box.visible { display: block; }
+
+.timeline-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.timeline-label-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timeline-time {
+  font-size: 13px;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-time .cur { color: #333; font-weight: 600; }
+
+.timeline {
+  position: relative;
+  height: 52px;
+  background: linear-gradient(to right, #e8eaf0, #f0f1f5);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.tl-segment {
+  position: absolute;
+  height: 100%;
+  opacity: 0.55;
+  border-right: 1.5px solid #fff;
+  transition: opacity 0.2s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.tl-segment:hover { opacity: 0.85; }
+.tl-segment.active { opacity: 1; box-shadow: 0 0 16px rgba(102, 126, 234, 0.6); }
+
+.tl-pointer {
+  position: absolute;
+  width: 3px;
+  height: 100%;
+  background: #ff4757;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(255, 71, 87, 0.7);
+  z-index: 5;
+  transition: none;
+}
+
+.tl-pointer::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -4px;
+  border-left: 5.5px solid transparent;
+  border-right: 5.5px solid transparent;
+  border-top: 8px solid #ff4757;
+}
+
+.tl-legends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.tl-leg {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #666;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tl-leg:hover { background: #e8eaf0; }
+.tl-leg.active { background: #eef1ff; color: #667eea; font-weight: 600; }
+
+.tl-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Section Headers */
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+  margin: 20px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2.5px solid #667eea;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Caption Input */
+.caption-input-area {
+  margin-bottom: 8px;
+}
+
+#captionInput {
+  width: 100%;
+  height: 130px;
+  padding: 12px 14px;
+  border: 2px solid #e0e3ea;
+  border-radius: 10px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 12.5px;
+  resize: vertical;
+  transition: border-color 0.25s;
+  color: #333;
+  line-height: 1.55;
+  background: #fff;
+}
+
+#captionInput:focus { outline: none; border-color: #667eea; }
+#captionInput::placeholder { color: #b0b4c0; }
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.btn:active { transform: translateY(0) !important; }
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #f0f1f5;
+  color: #555;
+}
+
+.btn-secondary:hover { background: #e4e6ee; }
+
+.btn-danger {
+  background: #ff4757;
+  color: #fff;
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.btn-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(255, 71, 87, 0.35);
+}
+
+.parse-msg {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: none;
+  animation: shake 0.4s;
+}
+
+.parse-msg.error { display: block; background: #fff0f0; color: #e74c3c; border: 1px solid #fcc; }
+.parse-msg.success { display: block; background: #f0fff4; color: #27ae60; border: 1px solid #b7ebc8; animation: none; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* History */
+.history-list { margin-top: 8px; }
+
+.history-item {
+  background: #fff;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  border-left: 4px solid #667eea;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.history-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+}
+
+.hi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.hi-title { font-size: 13px; font-weight: 700; color: #333; }
+.hi-time { font-size: 11px; color: #aaa; white-space: nowrap; }
+.hi-info { font-size: 12px; color: #777; }
+
+.hi-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* ── Right Panel ── */
+.right-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fc;
+  overflow: hidden;
+}
+
+.right-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+}
+
+.right-panel .panel-title {
+  position: sticky;
+  top: 0;
+  background: #f8f9fc;
+  padding: 0 0 12px;
+  z-index: 5;
+}
+
+/* Global Info Card */
+.global-card {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.global-card.visible { display: block; }
+
+.global-card h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.global-card p {
+  line-height: 1.75;
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.global-card strong {
+  display: inline;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.agent-tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+/* Segment Items */
+.seg-item {
+  background: #fff;
+  border: 2px solid #e8eaf0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  transition: all 0.35s;
+  scroll-margin-top: 20px;
+}
+
+.seg-item:hover { border-color: #c5cae9; }
+
+.seg-item.active {
+  border-color: #667eea;
+  box-shadow: 0 0 24px rgba(102, 126, 234, 0.2);
+  transform: scale(1.015);
+  background: linear-gradient(to right, #f5f7ff, #fef5ff);
+}
+
+.seg-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f1f5;
+}
+
+.seg-id {
+  font-size: 17px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.seg-time-badge {
+  font-size: 13px;
+  color: #666;
+  background: #f0f1f5;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.seg-action {
+  display: inline-block;
+  background: #764ba2;
+  color: #fff;
+  padding: 7px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.seg-caption-box {
+  background: #f8f9fc;
+  padding: 14px 16px;
+  border-radius: 10px;
+  line-height: 1.85;
+}
+
+.seg-caption-box p {
+  margin: 8px 0;
+  font-size: 13.5px;
+  color: #444;
+}
+
+.seg-caption-box strong {
+  color: #667eea;
+  display: inline-block;
+  min-width: 80px;
+  font-weight: 600;
+}
+
+.empty-right {
+  text-align: center;
+  padding: 80px 20px;
+  color: #bbb;
+}
+
+.empty-right-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
+.empty-right-text { font-size: 15px; }
+
+/* Toast */
+.toast-wrap {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast-msg {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  animation: toastSlide 0.35s ease;
+  pointer-events: auto;
+}
+
+.toast-msg.success { background: #27ae60; }
+.toast-msg.error { background: #e74c3c; }
+.toast-msg.info { background: #667eea; }
+
+@keyframes toastSlide {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: #764ba2; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  body { padding: 8px; }
+  .container {
+    flex-direction: column;
+    height: auto;
+    max-height: none;
+  }
+  .left-panel, .right-panel {
+    max-height: none;
+    border-right: none;
+  }
+  .left-panel { border-bottom: 1px solid #e8eaf0; }
+  .left-scroll, .right-scroll { max-height: 70vh; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- ── Left Panel ── -->
+  <div class="left-panel">
+    <div class="left-scroll">
+      <div class="panel-title">Video Caption Visualizer</div>
+
+      <!-- Upload Zone -->
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">&#x1F4C1;</div>
+        <div class="upload-text">点击或拖拽视频文件到此处上传</div>
+        <div class="upload-hint">支持 MP4、WebM、MOV 等格式 | 可多次上传替换</div>
+      </div>
+      <input type="file" id="fileInput" accept="video/*">
+
+      <!-- Video Player -->
+      <div class="video-wrap" id="videoWrap">
+        <video id="videoPlayer" controls></video>
+      </div>
+
+      <!-- Timeline -->
+      <div class="timeline-box" id="timelineBox">
+        <div class="timeline-label">
+          <span class="timeline-label-text">Timeline</span>
+          <span class="timeline-time">
+            <span class="cur" id="curTime">0:00.0</span> / <span id="durTime">0:00.0</span>
+          </span>
+        </div>
+        <div class="timeline" id="timeline">
+          <div class="tl-pointer" id="tlPointer"></div>
+        </div>
+        <div class="tl-legends" id="tlLegends"></div>
+      </div>
+
+      <!-- Caption Input -->
+      <div class="section-title">&#x1F4DD; Caption JSON</div>
+      <div class="caption-input-area">
+        <textarea id="captionInput" placeholder="在此粘贴 Caption JSON 数据..."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnParse">加载字幕</button>
+          <button class="btn btn-secondary" id="btnClear">清空</button>
+        </div>
+        <div class="parse-msg" id="parseMsg"></div>
+      </div>
+
+      <!-- History -->
+      <div class="section-title">&#x1F4DA; 历史记录</div>
+      <div class="history-list" id="historyList">
+        <div style="text-align:center;color:#bbb;padding:20px 0;font-size:13px;">暂无历史记录</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right Panel ── -->
+  <div class="right-panel">
+    <div class="right-scroll" id="rightScroll">
+      <div class="panel-title">&#x1F4C4; 字幕内容</div>
+
+      <!-- Global Info -->
+      <div class="global-card" id="globalCard">
+        <h3>&#x1F30D; 全局信息</h3>
+        <p id="globalCaption"></p>
+        <div style="margin-top:12px">
+          <span class="agent-tag">CONTROL AGENT</span>
+          <p id="controlAgent" style="margin-top:4px"></p>
+        </div>
+      </div>
+
+      <!-- Segments -->
+      <div id="segmentsList"></div>
+
+      <!-- Empty -->
+      <div class="empty-right" id="emptyRight">
+        <div class="empty-right-icon">&#x1F3AC;</div>
+        <div class="empty-right-text">请上传视频并加载字幕 JSON</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const SEG_COLORS = [
+  '#667eea', '#e74c3c', '#27ae60', '#f39c12',
+  '#9b59b6', '#1abc9c', '#e67e22', '#2980b9',
+];
+
+let videoFile = null;
+let captionData = null;
+let currentSegmentIndex = -1;
+let db = null;
+let rafId = null;
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+// ── IndexedDB ──
+
+function initDB() {
+  const req = indexedDB.open('VideoCaptionVizDB', 1);
+  req.onerror = () => console.warn('IndexedDB unavailable, history will not store video blobs');
+  req.onsuccess = e => { db = e.target.result; loadHistory(); };
+  req.onupgradeneeded = e => {
+    const d = e.target.result;
+    if (!d.objectStoreNames.contains('videos')) {
+      d.createObjectStore('videos', { keyPath: 'id' });
+    }
+  };
+}
+
+// ── Toast ──
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  el.textContent = msg;
+  $('#toastWrap').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 2400);
+}
+
+// ── Utils ──
+
+function fmtTime(s) {
+  if (!s || isNaN(s)) return '0:00.0';
+  const m = Math.floor(s / 60);
+  const sec = (s % 60).toFixed(1);
+  return `${m}:${sec.padStart(4, '0')}`;
+}
+
+function segColor(i) { return SEG_COLORS[i % SEG_COLORS.length]; }
+
+// ── Video Upload ──
+
+const uploadZone = $('#uploadZone');
+const fileInput = $('#fileInput');
+const video = $('#videoPlayer');
+
+uploadZone.addEventListener('click', () => { fileInput.value = ''; fileInput.click(); });
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) loadVideo(e.target.files[0]);
+});
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) loadVideo(e.dataTransfer.files[0]);
+});
+
+function loadVideo(file) {
+  if (!file || !file.type.startsWith('video/')) {
+    toast('请上传有效的视频文件', 'error');
+    return;
+  }
+  videoFile = file;
+  video.src = URL.createObjectURL(file);
+  video.load();
+  $('#videoWrap').classList.add('visible');
+
+  uploadZone.classList.add('has-video');
+  uploadZone.querySelector('.upload-icon').innerHTML = '&#x1F504;';
+  uploadZone.querySelector('.upload-text').textContent = `${file.name} — 点击更换视频`;
+
+  toast(`已加载: ${file.name}`, 'success');
+}
+
+// ── Video Events ──
+
+video.addEventListener('loadedmetadata', () => {
+  $('#durTime').textContent = fmtTime(video.duration);
+  renderTimeline();
+});
+
+// ── Caption Parse ──
+
+$('#btnParse').addEventListener('click', parseCaption);
+$('#btnClear').addEventListener('click', () => {
+  $('#captionInput').value = '';
+  hideParseMsg();
+});
+
+function hideParseMsg() {
+  const m = $('#parseMsg');
+  m.className = 'parse-msg';
+  m.style.display = 'none';
+}
+
+function showParseMsg(text, type) {
+  const m = $('#parseMsg');
+  m.textContent = text;
+  m.className = `parse-msg ${type}`;
+}
+
+function parseCaption() {
+  const raw = $('#captionInput').value.trim();
+  if (!raw) { showParseMsg('请输入字幕 JSON 数据', 'error'); return; }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('JSON 必须是非空数组');
+    if (!parsed[0].segments || !Array.isArray(parsed[0].segments)) throw new Error('缺少 segments 字段');
+
+    captionData = parsed[0];
+    currentSegmentIndex = -1;
+    renderSubtitles();
+    renderTimeline();
+    startRAF();
+    showParseMsg(`字幕加载成功！共 ${captionData.segments.length} 个片段`, 'success');
+
+    if (videoFile) saveToHistory();
+  } catch (err) {
+    showParseMsg('JSON 解析错误: ' + err.message, 'error');
+  }
+}
+
+// ── Render Subtitles (Right Panel) ──
+
+function renderSubtitles() {
+  if (!captionData) return;
+
+  $('#emptyRight').style.display = 'none';
+
+  const gc = $('#globalCard');
+  gc.classList.add('visible');
+  $('#globalCaption').textContent = captionData.global_caption || '';
+  $('#controlAgent').textContent = captionData.control_agent || '';
+
+  const list = $('#segmentsList');
+  list.innerHTML = '';
+
+  captionData.segments.forEach((seg, i) => {
+    const start = parseFloat(seg.start_time);
+    const end = parseFloat(seg.end_time);
+
+    const div = document.createElement('div');
+    div.className = 'seg-item';
+    div.id = `seg-${i}`;
+
+    let captionHTML = '';
+    if (seg.caption) {
+      const fields = [];
+      if (seg.caption.caption_abs)
+        fields.push(`<p><strong>绝对描述：</strong>${seg.caption.caption_abs}</p>`);
+      if (seg.caption.caption_delta)
+        fields.push(`<p><strong>变化描述：</strong>${seg.caption.caption_delta}</p>`);
+      if (seg.caption.end_state)
+        fields.push(`<p><strong>结束状态：</strong>${seg.caption.end_state}</p>`);
+      if (fields.length) captionHTML = `<div class="seg-caption-box">${fields.join('')}</div>`;
+    }
+
+    div.innerHTML = `
+      <div class="seg-head">
+        <span class="seg-id" style="color:${segColor(i)}">Segment #${seg.segment_id || i + 1}</span>
+        <span class="seg-time-badge">${fmtTime(start)} — ${fmtTime(end)}</span>
+      </div>
+      ${seg.action_label ? `<div class="seg-action" style="background:${segColor(i)}">${seg.action_label}</div>` : ''}
+      ${captionHTML}
+    `;
+
+    div.addEventListener('click', () => {
+      video.currentTime = start;
+    });
+
+    list.appendChild(div);
+  });
+}
+
+// ── Timeline ──
+
+function renderTimeline() {
+  const tl = $('#timeline');
+  const box = $('#timelineBox');
+
+  if (!captionData || !captionData.segments.length) { box.classList.remove('visible'); return; }
+  box.classList.add('visible');
+
+  const dur = video.duration || Math.max(...captionData.segments.map(s => parseFloat(s.end_time))) || 1;
+
+  const pointer = $('#tlPointer');
+  tl.innerHTML = '';
+  tl.appendChild(pointer);
+
+  captionData.segments.forEach((seg, i) => {
+    const s = parseFloat(seg.start_time);
+    const e = parseFloat(seg.end_time);
+    const div = document.createElement('div');
+    div.className = 'tl-segment';
+    div.id = `tl-seg-${i}`;
+    div.style.left = (s / dur * 100) + '%';
+    div.style.width = ((e - s) / dur * 100) + '%';
+    div.style.background = segColor(i);
+    div.textContent = `#${seg.segment_id || i + 1}`;
+    div.title = seg.action_label || '';
+    div.addEventListener('click', ev => { ev.stopPropagation(); video.currentTime = s; });
+    tl.appendChild(div);
+  });
+
+  tl.addEventListener('click', e => {
+    if (e.target === tl) {
+      const rect = tl.getBoundingClientRect();
+      video.currentTime = ((e.clientX - rect.left) / rect.width) * dur;
+    }
+  });
+
+  const legends = $('#tlLegends');
+  legends.innerHTML = '';
+  captionData.segments.forEach((seg, i) => {
+    const leg = document.createElement('div');
+    leg.className = 'tl-leg';
+    leg.dataset.index = i;
+    leg.innerHTML = `<span class="tl-dot" style="background:${segColor(i)}"></span><span>#${seg.segment_id || i + 1} ${seg.action_label || ''}</span>`;
+    leg.addEventListener('click', () => {
+      video.currentTime = parseFloat(seg.start_time);
+      const card = $(`#seg-${i}`);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    legends.appendChild(leg);
+  });
+}
+
+// ── RAF loop for smooth pointer ──
+
+function rafLoop() {
+  if (!captionData || !video.duration) { rafId = requestAnimationFrame(rafLoop); return; }
+
+  const t = video.currentTime;
+  const dur = video.duration;
+  const pct = (t / dur) * 100;
+
+  $('#tlPointer').style.left = pct + '%';
+  $('#curTime').textContent = fmtTime(t);
+
+  let newIdx = -1;
+  captionData.segments.forEach((seg, i) => {
+    const s = parseFloat(seg.start_time);
+    const e = parseFloat(seg.end_time);
+    if (t >= s && t < e) newIdx = i;
+  });
+
+  if (newIdx !== currentSegmentIndex) {
+    if (currentSegmentIndex >= 0) {
+      const old = $(`#seg-${currentSegmentIndex}`);
+      const oldTl = $(`#tl-seg-${currentSegmentIndex}`);
+      const oldLeg = $(`.tl-leg[data-index="${currentSegmentIndex}"]`);
+      if (old) old.classList.remove('active');
+      if (oldTl) oldTl.classList.remove('active');
+      if (oldLeg) oldLeg.classList.remove('active');
+    }
+
+    currentSegmentIndex = newIdx;
+
+    if (currentSegmentIndex >= 0) {
+      const cur = $(`#seg-${currentSegmentIndex}`);
+      const curTl = $(`#tl-seg-${currentSegmentIndex}`);
+      const curLeg = $(`.tl-leg[data-index="${currentSegmentIndex}"]`);
+      if (cur) {
+        cur.classList.add('active');
+        cur.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (curTl) curTl.classList.add('active');
+      if (curLeg) curLeg.classList.add('active');
+    }
+  }
+
+  rafId = requestAnimationFrame(rafLoop);
+}
+
+function startRAF() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafLoop();
+}
+
+// ── History (IndexedDB + localStorage) ──
+
+function saveToHistory() {
+  if (!videoFile || !captionData) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const id = Date.now().toString();
+
+    if (db) {
+      try {
+        const tx = db.transaction(['videos'], 'readwrite');
+        tx.objectStore('videos').put({ id, videoBlob: e.target.result, videoName: videoFile.name });
+      } catch (_) {}
+    }
+
+    const meta = {
+      id,
+      timestamp: new Date().toISOString(),
+      videoName: videoFile.name,
+      segmentCount: captionData.segments.length,
+      captionData,
+    };
+
+    let history = JSON.parse(localStorage.getItem('vcv_history') || '[]');
+    history.unshift(meta);
+
+    if (history.length > 15) {
+      const removed = history.splice(15);
+      if (db) {
+        removed.forEach(item => {
+          try { db.transaction(['videos'], 'readwrite').objectStore('videos').delete(item.id); } catch (_) {}
+        });
+      }
+    }
+
+    localStorage.setItem('vcv_history', JSON.stringify(history));
+    loadHistory();
+  };
+  reader.readAsArrayBuffer(videoFile);
+}
+
+function loadHistory() {
+  const list = $('#historyList');
+  const history = JSON.parse(localStorage.getItem('vcv_history') || '[]');
+
+  if (!history.length) {
+    list.innerHTML = '<div style="text-align:center;color:#bbb;padding:20px 0;font-size:13px;">暂无历史记录</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  history.forEach((item, idx) => {
+    const d = new Date(item.timestamp);
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <div class="hi-header">
+        <div>
+          <div class="hi-title">${item.videoName}</div>
+          <div class="hi-time">${d.toLocaleString('zh-CN')}</div>
+        </div>
+      </div>
+      <div class="hi-info">${item.segmentCount} 个片段</div>
+      <div class="hi-actions">
+        <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" data-action="restore" data-id="${item.id}">恢复</button>
+        <button class="btn btn-danger" data-action="delete" data-idx="${idx}" data-id="${item.id}">删除</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  list.addEventListener('click', handleHistoryClick);
+}
+
+function handleHistoryClick(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  e.stopPropagation();
+
+  if (btn.dataset.action === 'restore') restoreHistory(btn.dataset.id);
+  if (btn.dataset.action === 'delete') deleteHistory(btn.dataset.idx, btn.dataset.id);
+}
+
+function restoreHistory(id) {
+  const history = JSON.parse(localStorage.getItem('vcv_history') || '[]');
+  const meta = history.find(h => h.id === id);
+  if (!meta) { toast('记录不存在', 'error'); return; }
+
+  captionData = meta.captionData;
+  currentSegmentIndex = -1;
+  $('#captionInput').value = JSON.stringify([captionData], null, 2);
+  renderSubtitles();
+
+  if (db) {
+    try {
+      const tx = db.transaction(['videos'], 'readonly');
+      const req = tx.objectStore('videos').get(id);
+      req.onsuccess = () => {
+        if (req.result) {
+          const blob = new Blob([req.result.videoBlob], { type: 'video/mp4' });
+          videoFile = new File([blob], req.result.videoName || meta.videoName, { type: 'video/mp4' });
+          video.src = URL.createObjectURL(blob);
+          video.load();
+          $('#videoWrap').classList.add('visible');
+
+          uploadZone.classList.add('has-video');
+          uploadZone.querySelector('.upload-icon').innerHTML = '&#x1F504;';
+          uploadZone.querySelector('.upload-text').textContent = `${meta.videoName} — 点击更换视频`;
+
+          video.addEventListener('loadedmetadata', () => {
+            renderTimeline();
+            startRAF();
+          }, { once: true });
+
+          toast('历史记录恢复成功！', 'success');
+        } else {
+          renderTimeline();
+          startRAF();
+          toast('已恢复字幕数据，请重新上传视频文件', 'info');
+        }
+      };
+      req.onerror = () => {
+        renderTimeline();
+        startRAF();
+        toast('已恢复字幕数据，视频加载失败', 'info');
+      };
+    } catch (_) {
+      renderTimeline();
+      startRAF();
+      toast('已恢复字幕数据', 'info');
+    }
+  } else {
+    renderTimeline();
+    startRAF();
+    toast('已恢复字幕数据，请重新上传视频文件', 'info');
+  }
+}
+
+function deleteHistory(idx, id) {
+  if (!confirm('确定删除此历史记录？')) return;
+
+  if (db) {
+    try { db.transaction(['videos'], 'readwrite').objectStore('videos').delete(id); } catch (_) {}
+  }
+
+  let history = JSON.parse(localStorage.getItem('vcv_history') || '[]');
+  history.splice(idx, 1);
+  localStorage.setItem('vcv_history', JSON.stringify(history));
+  loadHistory();
+  toast('已删除', 'info');
+}
+
+// ── Keyboard ──
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); video.paused ? video.play() : video.pause(); }
+  if (e.code === 'ArrowLeft') { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 2); }
+  if (e.code === 'ArrowRight') { e.preventDefault(); video.currentTime = Math.min(video.duration || 0, video.currentTime + 2); }
+});
+
+// ── Init ──
+
+window.addEventListener('load', initDB);
+window.addEventListener('beforeunload', () => { if (rafId) cancelAnimationFrame(rafId); });
+</script>
+</body>
+</html>
