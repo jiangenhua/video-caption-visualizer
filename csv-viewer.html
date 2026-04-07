@@ -675,8 +675,8 @@ body {
       <div class="dp-upload">
         <div class="upload-zone" id="uploadZone">
           <div class="upload-icon">&#x1F4CA;</div>
-          <div class="upload-text">点击或拖拽上传 CSV</div>
-          <div class="upload-hint">需含 video_url + caption 字段</div>
+          <div class="upload-text">👉 Click or drag to upload CSV </div>
+          <div class="upload-hint">Must include video_url + caption fields</div>
         </div>
         <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
 
@@ -834,7 +834,7 @@ function handleCSV(file) {
   uploadZone.classList.add('has-file');
   uploadZone.querySelector('.upload-icon').innerHTML = '&#x1F504;';
   uploadZone.querySelector('.upload-text').textContent = `${file.name} — Click to replace`;
-  showLoading('正在统计 CSV line count...');
+  showLoading('Counting CSV lines...');
   let c = 0;
   Papa.parse(file, {
     header: true,
@@ -857,7 +857,7 @@ function loadRecords() {
   if (!csvFile) return;
   const start = Math.max(1, parseInt($('#startRow').value) || 1);
   const batch = Math.min(500, Math.max(1, parseInt($('#batchSize').value) || 200));
-  showLoading(`加载第 ${start}-${start+batch-1} 行...`);
+  showLoading(`loading ${start}-${start+batch-1} lines...`);
   records = [];
   let row = 0, vKey = null, cKey = null;
   Papa.parse(csvFile, {
@@ -886,12 +886,12 @@ function loadRecords() {
       filtered = [...records];
       selIdx = -1;
       renderList();
-      $('#dpStats').textContent = `第${start}-${Math.min(start+batch-1,totalRows)}行 / 共${totalRows}行`;
+      $('#dpStats').textContent = `No${start}-${Math.min(start+batch-1,totalRows)}rows / total${totalRows}rows`;
       $('#btnPrevPage').disabled = start <= 1;
       $('#btnNextPage').disabled = start + batch > totalRows;
-      toast(`已加载 ${records.length} 条`, 'success');
+      toast(`loaded ${records.length} lines`, 'success');
     },
-    error: err => { hideLoading(); toast('加载失败', 'error'); }
+    error: err => { hideLoading(); toast('loaded failed', 'error'); }
   });
 }
 
@@ -906,7 +906,7 @@ $('#searchInput').addEventListener('input', () => {
 
 function renderList() {
   const el = $('#recordScroll');
-  if (!filtered.length) { el.innerHTML = '<div class="dp-empty">无匹配记录</div>'; return; }
+  if (!filtered.length) { el.innerHTML = '<div class="dp-empty">No matching records</div>'; return; }
   el.innerHTML = '';
   filtered.forEach((r, i) => {
     const d = document.createElement('div');
@@ -959,7 +959,7 @@ video.addEventListener('error', () => { $('#videoError').style.display = 'block'
 // ── Render Caption ──
 function renderCaption() {
   const gc = $('#globalCard'), list = $('#segmentsList');
-  if (!caption) { gc.classList.remove('visible'); list.innerHTML = '<div style="text-align:center;padding:30px;color:#bbb;font-size:13px;">Caption 为空或格式错误</div>'; return; }
+  if (!caption) { gc.classList.remove('visible'); list.innerHTML = '<div style="text-align:center;padding:30px;color:#bbb;font-size:13px;">Caption missing or format error</div>'; return; }
   gc.classList.add('visible');
   $('#globalCaption').textContent = caption.global_caption || '';
   $('#controlAgent').textContent = caption.control_agent || '';
