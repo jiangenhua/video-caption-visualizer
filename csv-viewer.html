@@ -660,11 +660,11 @@ body {
   <div class="top-bar">
     <div class="app-title">CSV Caption Viewer</div>
     <div class="top-sep"></div>
-    <div class="cur-record-info" id="curRecordInfo">未加载数据</div>
+    <div class="cur-record-info" id="curRecordInfo">No data available</div>
     <div class="top-actions">
-      <button class="btn btn-outline" id="btnPrev" disabled>&#x25C0; 上一条</button>
-      <button class="btn btn-outline" id="btnNext" disabled>下一条 &#x25B6;</button>
-      <button class="btn btn-toggle" id="btnToggleData">&#x1F4CA; 数据面板</button>
+      <button class="btn btn-outline" id="btnPrev" disabled>&#x25C0; Prev</button>
+      <button class="btn btn-outline" id="btnNext" disabled>Next &#x25B6;</button>
+      <button class="btn btn-toggle" id="btnToggleData">&#x1F4CA; Dashboard</button>
     </div>
   </div>
 
@@ -681,13 +681,13 @@ body {
         <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
 
         <div class="config-row">
-          <span class="config-label">起始行</span>
+          <span class="config-label">Start line</span>
           <input class="config-input" type="number" id="startRow" value="1" min="1">
-          <span class="config-label">行数</span>
+          <span class="config-label">line count</span>
           <input class="config-input" type="number" id="batchSize" value="200" min="1" max="500">
         </div>
-        <div class="config-info" id="configInfo">上传 CSV 后点击加载</div>
-        <button class="btn-load" id="btnLoad" disabled>加载数据</button>
+        <div class="config-info" id="configInfo">Click Load after uploading CSV</div>
+        <button class="btn-load" id="btnLoad" disabled>Load Data</button>
       </div>
 
       <!-- Right: Record list -->
@@ -699,9 +699,9 @@ body {
             <button class="page-btn" id="btnNextPage" disabled>&#x25B6;</button>
           </div>
         </div>
-        <input class="search-input" id="searchInput" placeholder="&#x1F50D; 搜索 video_url / caption...">
+        <input class="search-input" id="searchInput" placeholder="&#x1F50D; search video_url / caption...">
         <div class="record-scroll" id="recordScroll">
-          <div class="dp-empty">上传 CSV 文件开始浏览</div>
+          <div class="dp-empty">Upload CSV file to start browsing</div>
         </div>
       </div>
     </div>
@@ -715,10 +715,10 @@ body {
         <div class="video-area" id="videoArea">
           <div class="video-placeholder" id="videoPlaceholder">
             <div class="video-placeholder-icon">&#x1F3AC;</div>
-            <div>选择一条记录播放视频</div>
+            <div>Select a record to play the video</div>
           </div>
           <video id="videoPlayer" controls style="display:none"></video>
-          <div class="video-error" id="videoError">视频加载失败，请检查 URL 是否可访问</div>
+          <div class="video-error" id="videoError">Video failed to load. Please check if the URL is accessible.</div>
         </div>
 
         <div class="timeline-box" id="timelineBox">
@@ -737,10 +737,10 @@ body {
     <!-- Right: Caption Content -->
     <div class="panel-right">
       <div class="panel-right-scroll" id="rightScroll">
-        <div class="right-title" id="rightTitle">&#x1F4C4; 字幕内容</div>
+        <div class="right-title" id="rightTitle">&#x1F4C4; Caption</div>
 
         <div class="global-card" id="globalCard">
-          <h3>&#x1F30D; 全局信息</h3>
+          <h3>&#x1F30D; Global caption</h3>
           <p id="globalCaption"></p>
           <div style="margin-top:10px">
             <span class="agent-tag">CONTROL AGENT</span>
@@ -752,7 +752,7 @@ body {
 
         <div class="empty-right" id="emptyRight">
           <div class="empty-right-icon">&#x1F4CA;</div>
-          <div class="empty-right-text">上传 CSV 并选择一条记录查看</div>
+          <div class="empty-right-text">Upload a CSV and select a record to view</div>
         </div>
       </div>
     </div>
@@ -761,7 +761,7 @@ body {
 
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
-  <div class="loading-text" id="loadingText">正在解析 CSV...</div>
+  <div class="loading-text" id="loadingText">Parsing CSV...</div>
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
@@ -833,8 +833,8 @@ function handleCSV(file) {
   csvFile = file;
   uploadZone.classList.add('has-file');
   uploadZone.querySelector('.upload-icon').innerHTML = '&#x1F504;';
-  uploadZone.querySelector('.upload-text').textContent = `${file.name} — 点击更换`;
-  showLoading('正在统计 CSV 行数...');
+  uploadZone.querySelector('.upload-text').textContent = `${file.name} — Click to replace`;
+  showLoading('正在统计 CSV line count...');
   let c = 0;
   Papa.parse(file, {
     header: true,
@@ -842,11 +842,11 @@ function handleCSV(file) {
     complete: () => {
       totalRows = c;
       hideLoading();
-      $('#configInfo').textContent = `共 ${totalRows} 行`;
+      $('#configInfo').textContent = `total ${totalRows} lines`;
       $('#btnLoad').disabled = false;
-      toast(`${file.name} — ${totalRows} 行`, 'success');
+      toast(`${file.name} — ${totalRows} lines`, 'success');
     },
-    error: err => { hideLoading(); toast('CSV 解析失败: ' + err.message, 'error'); }
+    error: err => { hideLoading(); toast('CSV parsing failed: ' + err.message, 'error'); }
   });
 }
 
@@ -871,7 +871,7 @@ function loadRecords() {
             || f.find(k => k.toLowerCase() === 'video_url');
         cKey = f.find(k => k.toLowerCase() === 'caption')
             || f.find(k => k.toLowerCase().includes('caption'));
-        if (!vKey || !cKey) { parser.abort(); hideLoading(); toast(`缺少 video_url/caption 字段。列: ${f.join(', ')}`, 'error'); return; }
+        if (!vKey || !cKey) { parser.abort(); hideLoading(); toast(`Missing video_url/caption field. Column: ${f.join(', ')}`, 'error'); return; }
       }
       if (row >= start && row < start + batch) {
         const url = r.data[vKey] || '', raw = r.data[cKey] || '';
@@ -971,9 +971,9 @@ function renderCaption() {
     let cap = '';
     if (seg.caption) {
       const f = [];
-      if (seg.caption.caption_abs) f.push(`<p><strong>绝对描述：</strong>${seg.caption.caption_abs}</p>`);
-      if (seg.caption.caption_delta) f.push(`<p><strong>变化描述：</strong>${seg.caption.caption_delta}</p>`);
-      if (seg.caption.end_state) f.push(`<p><strong>结束状态：</strong>${seg.caption.end_state}</p>`);
+      if (seg.caption.caption_abs) f.push(`<p><strong>caption_abs：</strong>${seg.caption.caption_abs}</p>`);
+      if (seg.caption.caption_delta) f.push(`<p><strong>caption_delta：</strong>${seg.caption.caption_delta}</p>`);
+      if (seg.caption.end_state) f.push(`<p><strong>end_state：</strong>${seg.caption.end_state}</p>`);
       if (f.length) cap = `<div class="seg-caption-box">${f.join('')}</div>`;
     }
     div.innerHTML = `<div class="seg-head"><span class="seg-id" style="color:${segColor(i)}">Segment #${seg.segment_id||i+1}</span><span class="seg-time-badge">${fmtTime(s)} — ${fmtTime(e)}</span></div>${seg.action_label?`<div class="seg-action" style="background:${segColor(i)}">${seg.action_label}</div>`:''}${cap}`;
