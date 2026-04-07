@@ -16,216 +16,245 @@ body {
   color: #333;
 }
 
-.container {
+.app {
   max-width: 1900px;
   margin: 0 auto;
-  display: flex;
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.25);
   overflow: hidden;
   height: calc(100vh - 32px);
-}
-
-/* ── Left Panel: CSV + Record List ── */
-.left-panel {
-  width: 380px;
-  min-width: 320px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e8eaf0;
-  overflow: hidden;
+}
+
+/* ── Top Bar ── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e8eaf0;
+  background: #fff;
   flex-shrink: 0;
+  z-index: 20;
 }
 
-.left-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 18px;
-}
-
-.panel-title {
-  font-size: 19px;
+.app-title {
+  font-size: 17px;
   font-weight: 700;
-  text-align: center;
-  margin-bottom: 16px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-/* Upload */
-.upload-zone {
-  border: 2.5px dashed #c5cae9;
-  border-radius: 12px;
-  padding: 24px 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: #f5f7ff;
-  margin-bottom: 14px;
-}
-
-.upload-zone:hover, .upload-zone.drag-over {
-  border-color: #667eea;
-  background: #eef1ff;
-  transform: scale(1.01);
-}
-
-.upload-zone.has-file {
-  padding: 10px 16px;
-  border-style: solid;
-  border-color: #c5cae9;
-  background: #fafbff;
-}
-
-.upload-icon { font-size: 32px; margin-bottom: 6px; }
-.upload-text { font-size: 14px; color: #667eea; font-weight: 500; }
-.upload-hint { font-size: 11px; color: #999; margin-top: 4px; }
-.upload-zone.has-file .upload-icon { font-size: 16px; margin-bottom: 0; }
-.upload-zone.has-file .upload-hint { display: none; }
-
-#fileInput { display: none; }
-
-/* Config */
-.config-box {
-  background: #f8f9fc;
-  border: 1px solid #e8eaf0;
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 14px;
-}
-
-.config-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.config-row:last-child { margin-bottom: 0; }
-
-.config-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #555;
   white-space: nowrap;
-  min-width: 56px;
 }
 
-.config-input {
+.top-sep { width: 1px; height: 24px; background: #e8eaf0; flex-shrink: 0; }
+
+.cur-record-info {
   flex: 1;
-  padding: 6px 10px;
-  border: 1.5px solid #dde0ea;
-  border-radius: 6px;
-  font-size: 13px;
-  font-family: inherit;
-  color: #333;
   min-width: 0;
-  text-align: center;
+  font-size: 13px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.config-input:focus { outline: none; border-color: #667eea; }
+.cur-record-info strong { color: #333; font-weight: 600; }
 
-.config-info {
-  font-size: 11px;
-  color: #999;
-  text-align: center;
-  margin-bottom: 8px;
-}
+.top-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
 .btn {
-  padding: 8px 18px;
+  padding: 7px 16px;
   border: none;
   border-radius: 7px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: all 0.15s;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
 }
 
-.btn:active { transform: translateY(0) !important; }
+.btn:active { transform: scale(0.97); }
 
 .btn-primary {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
-  width: 100%;
 }
+.btn-primary:hover { box-shadow: 0 3px 12px rgba(102,126,234,0.35); }
 
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
-}
-
-.btn-sm {
-  padding: 5px 12px;
-  font-size: 12px;
-}
+.btn-ghost { background: transparent; color: #667eea; }
+.btn-ghost:hover { background: #f0f3ff; }
 
 .btn-outline {
   background: #fff;
   color: #667eea;
   border: 1.5px solid #667eea;
 }
-
 .btn-outline:hover { background: #f0f3ff; }
+.btn-outline:disabled { opacity: 0.4; cursor: default; }
 
-/* Stats bar */
-.stats-bar {
+.btn-toggle {
+  background: #f0f3ff;
+  color: #667eea;
+  border: 1.5px solid #dde0ff;
+}
+.btn-toggle:hover { background: #e4e9ff; }
+.btn-toggle.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border-color: #667eea;
+}
+
+.btn-danger {
+  background: #ff4757;
+  color: #fff;
+  padding: 5px 12px;
+  font-size: 11px;
+}
+
+/* ── Data Panel (collapsible) ── */
+.data-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid transparent;
+  flex-shrink: 0;
+  background: #f8f9fc;
+}
+
+.data-panel.open {
+  max-height: 420px;
+  border-bottom-color: #e8eaf0;
+}
+
+.data-inner {
+  padding: 16px 20px;
+  display: flex;
+  gap: 16px;
+  height: 100%;
+}
+
+/* Upload col */
+.dp-upload {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upload-zone {
+  border: 2px dashed #c5cae9;
+  border-radius: 10px;
+  padding: 18px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  background: #fff;
+}
+
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: #667eea;
+  background: #eef1ff;
+}
+
+.upload-zone.has-file { padding: 10px 12px; border-style: solid; }
+
+.upload-icon { font-size: 24px; margin-bottom: 4px; }
+.upload-text { font-size: 13px; color: #667eea; font-weight: 500; }
+.upload-hint { font-size: 11px; color: #aaa; margin-top: 2px; }
+.upload-zone.has-file .upload-hint { display: none; }
+
+#fileInput { display: none; }
+
+.config-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.config-label { font-size: 11px; font-weight: 600; color: #666; white-space: nowrap; }
+
+.config-input {
+  width: 64px;
+  padding: 5px 8px;
+  border: 1.5px solid #dde0ea;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  text-align: center;
+  color: #333;
+}
+
+.config-input:focus { outline: none; border-color: #667eea; }
+
+.config-info { font-size: 11px; color: #999; }
+
+.btn-load {
+  padding: 8px 0;
+  width: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.btn-load:hover { box-shadow: 0 3px 12px rgba(102,126,234,0.35); }
+.btn-load:disabled { opacity: 0.4; cursor: default; }
+
+/* Record list col */
+.dp-records {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dp-records-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  font-size: 12px;
-  font-weight: 500;
-  display: none;
+  gap: 8px;
 }
 
-.stats-bar.visible { display: flex; }
+.dp-stats { font-size: 12px; color: #667eea; font-weight: 600; white-space: nowrap; }
 
-.stats-bar .nav-btns {
-  display: flex;
-  gap: 4px;
-}
+.dp-page-btns { display: flex; gap: 4px; }
 
-.nav-btn {
-  background: rgba(255,255,255,0.2);
-  border: none;
-  color: #fff;
+.page-btn {
+  background: #fff;
+  border: 1.5px solid #dde0ea;
+  color: #667eea;
   width: 28px;
   height: 28px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
 }
 
-.nav-btn:hover { background: rgba(255,255,255,0.35); }
-.nav-btn:disabled { opacity: 0.4; cursor: default; }
-
-/* Search */
-.search-box {
-  position: relative;
-  margin-bottom: 10px;
-  display: none;
-}
-
-.search-box.visible { display: block; }
+.page-btn:hover { background: #f0f3ff; border-color: #667eea; }
+.page-btn:disabled { opacity: 0.3; cursor: default; }
 
 .search-input {
   width: 100%;
-  padding: 8px 12px 8px 32px;
+  padding: 7px 12px;
   border: 1.5px solid #dde0ea;
-  border-radius: 8px;
+  border-radius: 7px;
   font-size: 12px;
   font-family: inherit;
   color: #333;
@@ -233,149 +262,121 @@ body {
 
 .search-input:focus { outline: none; border-color: #667eea; }
 
-.search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 13px;
-  color: #aaa;
+.record-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-content: flex-start;
 }
 
-/* Record List */
-.record-list { display: flex; flex-direction: column; gap: 4px; }
-
-.record-item {
+.rec-chip {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 7px;
   cursor: pointer;
-  transition: all 0.2s;
   border: 1.5px solid transparent;
+  transition: all 0.2s;
+  max-width: 280px;
 }
 
-.record-item:hover { background: #f5f7ff; border-color: #dde0ea; }
+.rec-chip:hover { background: #eef1ff; border-color: #dde0ea; }
+.rec-chip.active { background: #667eea; border-color: #667eea; color: #fff; }
 
-.record-item.active {
-  background: linear-gradient(to right, #f0f3ff, #fef5ff);
-  border-color: #667eea;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-}
-
-.rec-idx {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+.rec-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: #667eea;
   background: #f0f1f5;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: #667eea;
+  flex-shrink: 0;
 }
 
-.record-item.active .rec-idx { background: #667eea; color: #fff; }
+.rec-chip.active .rec-num { background: rgba(255,255,255,0.25); color: #fff; }
 
-.rec-info {
+.rec-name {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-empty { text-align: center; padding: 30px; color: #ccc; font-size: 12px; width: 100%; }
+
+/* ── Main Two-Panel ── */
+.main-panels {
   flex: 1;
-  min-width: 0;
+  display: flex;
   overflow: hidden;
+  min-height: 0;
 }
 
-.rec-url {
-  font-size: 12px;
-  font-weight: 600;
-  color: #333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rec-preview {
-  font-size: 11px;
-  color: #999;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 2px;
-}
-
-.empty-list {
-  text-align: center;
-  padding: 40px 10px;
-  color: #ccc;
-  font-size: 13px;
-}
-
-/* ── Right Panel: Video + Caption ── */
-.right-panel {
+/* Left: Video + Timeline */
+.panel-left {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  border-right: 1px solid #e8eaf0;
   overflow: hidden;
 }
 
-.right-scroll {
+.panel-left-scroll {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px;
-}
-
-.video-area {
-  margin-bottom: 16px;
+  padding: 20px;
 }
 
 .video-area video {
   width: 100%;
   border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   background: #000;
   display: block;
-  max-height: 45vh;
 }
 
 .video-error {
-  padding: 20px;
+  padding: 16px;
   text-align: center;
   background: #fff8f8;
   border: 1px solid #fdd;
   border-radius: 10px;
   color: #c0392b;
   font-size: 13px;
+  margin-top: 8px;
   display: none;
 }
 
-/* Record header in right panel */
-.record-header {
+.video-placeholder {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #f0f1f5;
+  border-radius: 10px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  gap: 12px;
+  justify-content: center;
+  color: #bbb;
+  font-size: 14px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.record-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #667eea;
-}
-
-.record-nav {
-  display: flex;
-  gap: 6px;
-}
-
-.record-nav .btn { padding: 6px 14px; }
+.video-placeholder-icon { font-size: 40px; opacity: 0.5; }
 
 /* Timeline */
 .timeline-box {
-  margin-bottom: 18px;
+  margin-top: 16px;
   padding: 14px;
   background: #f8f9fc;
   border-radius: 12px;
@@ -392,20 +393,8 @@ body {
   margin-bottom: 8px;
 }
 
-.tl-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #667eea;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.tl-time {
-  font-size: 12px;
-  color: #888;
-  font-variant-numeric: tabular-nums;
-}
-
+.tl-title { font-size: 12px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 0.5px; }
+.tl-time { font-size: 12px; color: #888; font-variant-numeric: tabular-nums; }
 .tl-time .cur { color: #333; font-weight: 600; }
 
 .timeline {
@@ -434,25 +423,23 @@ body {
 }
 
 .tl-seg:hover { opacity: 0.8; }
-.tl-seg.active { opacity: 1; box-shadow: 0 0 14px rgba(102, 126, 234, 0.5); }
+.tl-seg.active { opacity: 1; box-shadow: 0 0 14px rgba(102,126,234,0.5); }
 
 .tl-pointer {
   position: absolute;
   width: 3px;
   height: 100%;
   background: #ff4757;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   pointer-events: none;
-  box-shadow: 0 0 8px rgba(255, 71, 87, 0.7);
+  box-shadow: 0 0 8px rgba(255,71,87,0.7);
   z-index: 5;
 }
 
 .tl-pointer::before {
   content: '';
   position: absolute;
-  top: -5px;
-  left: -4px;
+  top: -5px; left: -4px;
   border-left: 5.5px solid transparent;
   border-right: 5.5px solid transparent;
   border-top: 8px solid #ff4757;
@@ -482,6 +469,32 @@ body {
 
 .tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
+/* Right: Caption */
+.panel-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fc;
+  overflow: hidden;
+}
+
+.panel-right-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+}
+
+.right-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2.5px solid #667eea;
+}
+
 /* Global Card */
 .global-card {
   background: linear-gradient(135deg, #667eea, #764ba2);
@@ -493,7 +506,6 @@ body {
 }
 
 .global-card.visible { display: block; }
-
 .global-card h3 { font-size: 15px; margin-bottom: 8px; }
 .global-card p { line-height: 1.75; margin: 5px 0; font-size: 13px; }
 
@@ -522,7 +534,7 @@ body {
 
 .seg-item.active {
   border-color: #667eea;
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.18);
+  box-shadow: 0 0 20px rgba(102,126,234,0.18);
   transform: scale(1.01);
   background: linear-gradient(to right, #f5f7ff, #fef5ff);
 }
@@ -537,6 +549,7 @@ body {
 }
 
 .seg-id { font-size: 15px; font-weight: 700; }
+
 .seg-time-badge {
   font-size: 12px;
   color: #666;
@@ -566,16 +579,14 @@ body {
 .seg-caption-box p { margin: 6px 0; font-size: 13px; color: #444; }
 .seg-caption-box strong { color: #667eea; font-weight: 600; }
 
-/* Empty state */
 .empty-right {
   text-align: center;
-  padding: 80px 20px;
+  padding: 60px 20px;
   color: #ccc;
 }
 
 .empty-right-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
-.empty-right-text { font-size: 15px; margin-bottom: 6px; color: #aaa; }
-.empty-right-hint { font-size: 12px; color: #ccc; }
+.empty-right-text { font-size: 15px; color: #aaa; }
 
 /* Toast */
 .toast-wrap {
@@ -606,12 +617,9 @@ body {
 .toast-msg.error { background: #e74c3c; }
 .toast-msg.info { background: #667eea; }
 
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes toastIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
 
-/* Loading overlay */
+/* Loading */
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -626,140 +634,131 @@ body {
 
 .loading-overlay.visible { display: flex; }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e8eaf0;
-  border-top-color: #667eea;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
+.spinner { width: 40px; height: 40px; border: 4px solid #e8eaf0; border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
 .loading-text { font-size: 14px; color: #667eea; font-weight: 500; }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 4px;
-}
+::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 4px; }
 
-/* Responsive */
 @media (max-width: 900px) {
   body { padding: 8px; }
-  .container { flex-direction: column; height: auto; }
-  .left-panel { width: 100%; max-height: 45vh; border-right: none; border-bottom: 1px solid #e8eaf0; }
+  .app { height: auto; max-height: none; }
+  .main-panels { flex-direction: column; }
+  .panel-left { border-right: none; border-bottom: 1px solid #e8eaf0; max-height: 50vh; }
+  .data-inner { flex-direction: column; }
+  .dp-upload { width: 100%; }
 }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- ── Left Panel ── -->
-  <div class="left-panel">
-    <div class="left-scroll">
-      <div class="panel-title">CSV Caption Viewer</div>
+<div class="app">
+  <!-- ── Top Bar ── -->
+  <div class="top-bar">
+    <div class="app-title">CSV Caption Viewer</div>
+    <div class="top-sep"></div>
+    <div class="cur-record-info" id="curRecordInfo">未加载数据</div>
+    <div class="top-actions">
+      <button class="btn btn-outline" id="btnPrev" disabled>&#x25C0; 上一条</button>
+      <button class="btn btn-outline" id="btnNext" disabled>下一条 &#x25B6;</button>
+      <button class="btn btn-toggle" id="btnToggleData">&#x1F4CA; 数据面板</button>
+    </div>
+  </div>
 
-      <!-- CSV Upload -->
-      <div class="upload-zone" id="uploadZone">
-        <div class="upload-icon">&#x1F4CA;</div>
-        <div class="upload-text">点击或拖拽上传 CSV 文件</div>
-        <div class="upload-hint">需包含 video_url 和 caption 字段</div>
-      </div>
-      <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
+  <!-- ── Collapsible Data Panel ── -->
+  <div class="data-panel open" id="dataPanel">
+    <div class="data-inner">
+      <!-- Left: Upload + Config -->
+      <div class="dp-upload">
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-icon">&#x1F4CA;</div>
+          <div class="upload-text">点击或拖拽上传 CSV</div>
+          <div class="upload-hint">需含 video_url + caption 字段</div>
+        </div>
+        <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
 
-      <!-- Row Config -->
-      <div class="config-box" id="configBox">
         <div class="config-row">
           <span class="config-label">起始行</span>
           <input class="config-input" type="number" id="startRow" value="1" min="1">
-          <span class="config-label">加载行数</span>
+          <span class="config-label">行数</span>
           <input class="config-input" type="number" id="batchSize" value="200" min="1" max="500">
         </div>
         <div class="config-info" id="configInfo">上传 CSV 后点击加载</div>
-        <button class="btn btn-primary" id="btnLoad" disabled>加载数据</button>
+        <button class="btn-load" id="btnLoad" disabled>加载数据</button>
       </div>
 
-      <!-- Stats -->
-      <div class="stats-bar" id="statsBar">
-        <span id="statsText">-</span>
-        <div class="nav-btns">
-          <button class="nav-btn" id="btnPrevPage" title="上一批">&#x25C0;</button>
-          <button class="nav-btn" id="btnNextPage" title="下一批">&#x25B6;</button>
+      <!-- Right: Record list -->
+      <div class="dp-records">
+        <div class="dp-records-header">
+          <span class="dp-stats" id="dpStats">-</span>
+          <div class="dp-page-btns">
+            <button class="page-btn" id="btnPrevPage" disabled>&#x25C0;</button>
+            <button class="page-btn" id="btnNextPage" disabled>&#x25B6;</button>
+          </div>
         </div>
-      </div>
-
-      <!-- Search -->
-      <div class="search-box" id="searchBox">
-        <span class="search-icon">&#x1F50D;</span>
-        <input class="search-input" id="searchInput" placeholder="搜索 video_url 或 caption...">
-      </div>
-
-      <!-- Record List -->
-      <div class="record-list" id="recordList">
-        <div class="empty-list">上传 CSV 文件开始浏览</div>
+        <input class="search-input" id="searchInput" placeholder="&#x1F50D; 搜索 video_url / caption...">
+        <div class="record-scroll" id="recordScroll">
+          <div class="dp-empty">上传 CSV 文件开始浏览</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ── Right Panel ── -->
-  <div class="right-panel">
-    <div class="right-scroll" id="rightScroll">
+  <!-- ── Main Two-Panel Layout ── -->
+  <div class="main-panels">
+    <!-- Left: Video + Timeline -->
+    <div class="panel-left">
+      <div class="panel-left-scroll" id="leftScroll">
+        <div class="video-area" id="videoArea">
+          <div class="video-placeholder" id="videoPlaceholder">
+            <div class="video-placeholder-icon">&#x1F3AC;</div>
+            <div>选择一条记录播放视频</div>
+          </div>
+          <video id="videoPlayer" controls style="display:none"></video>
+          <div class="video-error" id="videoError">视频加载失败，请检查 URL 是否可访问</div>
+        </div>
 
-      <!-- Record Header -->
-      <div class="record-header" id="recordHeader" style="display:none">
-        <span class="record-title" id="recordTitle">-</span>
-        <div class="record-nav">
-          <button class="btn btn-sm btn-outline" id="btnPrev">&#x25C0; 上一条</button>
-          <button class="btn btn-sm btn-outline" id="btnNext">下一条 &#x25B6;</button>
+        <div class="timeline-box" id="timelineBox">
+          <div class="tl-header">
+            <span class="tl-title">Timeline</span>
+            <span class="tl-time"><span class="cur" id="curTime">0:00.0</span> / <span id="durTime">0:00.0</span></span>
+          </div>
+          <div class="timeline" id="timeline">
+            <div class="tl-pointer" id="tlPointer"></div>
+          </div>
+          <div class="tl-legends" id="tlLegends"></div>
         </div>
       </div>
+    </div>
 
-      <!-- Video -->
-      <div class="video-area" id="videoArea" style="display:none">
-        <video id="videoPlayer" controls></video>
-        <div class="video-error" id="videoError">视频加载失败，请检查 URL 是否可访问</div>
-      </div>
+    <!-- Right: Caption Content -->
+    <div class="panel-right">
+      <div class="panel-right-scroll" id="rightScroll">
+        <div class="right-title" id="rightTitle">&#x1F4C4; 字幕内容</div>
 
-      <!-- Timeline -->
-      <div class="timeline-box" id="timelineBox">
-        <div class="tl-header">
-          <span class="tl-title">Timeline</span>
-          <span class="tl-time"><span class="cur" id="curTime">0:00.0</span> / <span id="durTime">0:00.0</span></span>
+        <div class="global-card" id="globalCard">
+          <h3>&#x1F30D; 全局信息</h3>
+          <p id="globalCaption"></p>
+          <div style="margin-top:10px">
+            <span class="agent-tag">CONTROL AGENT</span>
+            <p id="controlAgent" style="margin-top:4px"></p>
+          </div>
         </div>
-        <div class="timeline" id="timeline">
-          <div class="tl-pointer" id="tlPointer"></div>
+
+        <div id="segmentsList"></div>
+
+        <div class="empty-right" id="emptyRight">
+          <div class="empty-right-icon">&#x1F4CA;</div>
+          <div class="empty-right-text">上传 CSV 并选择一条记录查看</div>
         </div>
-        <div class="tl-legends" id="tlLegends"></div>
-      </div>
-
-      <!-- Global Info -->
-      <div class="global-card" id="globalCard">
-        <h3>&#x1F30D; 全局信息</h3>
-        <p id="globalCaption"></p>
-        <div style="margin-top:10px">
-          <span class="agent-tag">CONTROL AGENT</span>
-          <p id="controlAgent" style="margin-top:4px"></p>
-        </div>
-      </div>
-
-      <!-- Segments -->
-      <div id="segmentsList"></div>
-
-      <!-- Empty -->
-      <div class="empty-right" id="emptyRight">
-        <div class="empty-right-icon">&#x1F4CA;</div>
-        <div class="empty-right-text">上传 CSV 并选择一条记录查看</div>
-        <div class="empty-right-hint">CSV 需包含 video_url 和 caption 列</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Loading -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <div class="loading-text" id="loadingText">正在解析 CSV...</div>
@@ -775,15 +774,14 @@ const $$ = s => document.querySelectorAll(s);
 let csvFile = null;
 let totalRows = 0;
 let records = [];
-let filteredRecords = [];
-let selectedIndex = -1;
-let currentCaption = null;
-let currentSegIdx = -1;
+let filtered = [];
+let selIdx = -1;
+let caption = null;
+let segIdx = -1;
 let rafId = null;
 
 const video = $('#videoPlayer');
 
-// ── Toast ──
 function toast(msg, type = 'info') {
   const el = document.createElement('div');
   el.className = `toast-msg ${type}`;
@@ -794,26 +792,31 @@ function toast(msg, type = 'info') {
 
 function fmtTime(s) {
   if (!s || isNaN(s)) return '0:00.0';
-  const m = Math.floor(s / 60);
-  const sec = (s % 60).toFixed(1);
-  return `${m}:${sec.padStart(4, '0')}`;
+  return `${Math.floor(s/60)}:${(s%60).toFixed(1).padStart(4,'0')}`;
 }
 
 function segColor(i) { return SEG_COLORS[i % SEG_COLORS.length]; }
 
-function showLoading(text) {
-  $('#loadingText').textContent = text || '正在解析 CSV...';
-  $('#loadingOverlay').classList.add('visible');
-}
-
+function showLoading(t) { $('#loadingText').textContent = t; $('#loadingOverlay').classList.add('visible'); }
 function hideLoading() { $('#loadingOverlay').classList.remove('visible'); }
 
-function extractFilename(url) {
-  try {
-    const u = new URL(url);
-    const parts = u.pathname.split('/').filter(Boolean);
-    return parts[parts.length - 1] || u.hostname;
-  } catch { return url?.slice(0, 50) || '-'; }
+function extractName(url) {
+  try { const p = new URL(url).pathname.split('/').filter(Boolean); return p[p.length-1] || url.slice(0,40); }
+  catch { return url?.slice(0,40) || '-'; }
+}
+
+// ── Data Panel Toggle ──
+const dataPanel = $('#dataPanel');
+const btnToggle = $('#btnToggleData');
+
+btnToggle.addEventListener('click', () => {
+  const open = dataPanel.classList.toggle('open');
+  btnToggle.classList.toggle('active', open);
+});
+
+function collapsePanel() {
+  dataPanel.classList.remove('open');
+  btnToggle.classList.remove('active');
 }
 
 // ── CSV Upload ──
@@ -821,39 +824,29 @@ const uploadZone = $('#uploadZone');
 const fileInput = $('#fileInput');
 
 uploadZone.addEventListener('click', () => { fileInput.value = ''; fileInput.click(); });
-fileInput.addEventListener('change', e => { if (e.target.files[0]) handleCSVFile(e.target.files[0]); });
-
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleCSV(e.target.files[0]); });
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-uploadZone.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadZone.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) handleCSVFile(e.dataTransfer.files[0]);
-});
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleCSV(e.dataTransfer.files[0]); });
 
-function handleCSVFile(file) {
+function handleCSV(file) {
   csvFile = file;
   uploadZone.classList.add('has-file');
   uploadZone.querySelector('.upload-icon').innerHTML = '&#x1F504;';
-  uploadZone.querySelector('.upload-text').textContent = `${file.name} — 点击更换文件`;
-
+  uploadZone.querySelector('.upload-text').textContent = `${file.name} — 点击更换`;
   showLoading('正在统计 CSV 行数...');
-
-  let count = 0;
+  let c = 0;
   Papa.parse(file, {
     header: true,
-    step: () => { count++; },
+    step: () => c++,
     complete: () => {
-      totalRows = count;
+      totalRows = c;
       hideLoading();
-      $('#configInfo').textContent = `共 ${totalRows} 行数据，建议每次加载 200-300 行`;
+      $('#configInfo').textContent = `共 ${totalRows} 行`;
       $('#btnLoad').disabled = false;
-      toast(`CSV 已加载: ${file.name}，共 ${totalRows} 行`, 'success');
+      toast(`${file.name} — ${totalRows} 行`, 'success');
     },
-    error: err => {
-      hideLoading();
-      toast('CSV 解析失败: ' + err.message, 'error');
-    }
+    error: err => { hideLoading(); toast('CSV 解析失败: ' + err.message, 'error'); }
   });
 }
 
@@ -862,244 +855,128 @@ $('#btnLoad').addEventListener('click', loadRecords);
 
 function loadRecords() {
   if (!csvFile) return;
-
   const start = Math.max(1, parseInt($('#startRow').value) || 1);
   const batch = Math.min(500, Math.max(1, parseInt($('#batchSize').value) || 200));
-
-  showLoading(`正在加载第 ${start} - ${start + batch - 1} 行...`);
-
+  showLoading(`加载第 ${start}-${start+batch-1} 行...`);
   records = [];
-  let rowNum = 0;
-  let videoUrlKey = null;
-  let captionKey = null;
-
+  let row = 0, vKey = null, cKey = null;
   Papa.parse(csvFile, {
     header: true,
-    step: (row, parser) => {
-      rowNum++;
-
-      if (rowNum === 1) {
-        const fields = Object.keys(row.data);
-        videoUrlKey = fields.find(f => f.toLowerCase().replace(/[_\s-]/g, '') === 'videourl')
-          || fields.find(f => f.toLowerCase().includes('video') && f.toLowerCase().includes('url'))
-          || fields.find(f => f.toLowerCase() === 'video_url');
-        captionKey = fields.find(f => f.toLowerCase() === 'caption')
-          || fields.find(f => f.toLowerCase().includes('caption'));
-
-        if (!videoUrlKey || !captionKey) {
-          parser.abort();
-          hideLoading();
-          toast(`CSV 缺少必要字段。找到: ${fields.join(', ')}`, 'error');
-          return;
-        }
+    step: (r, parser) => {
+      row++;
+      if (row === 1) {
+        const f = Object.keys(r.data);
+        vKey = f.find(k => k.toLowerCase().replace(/[_\s-]/g,'') === 'videourl')
+            || f.find(k => k.toLowerCase().includes('video') && k.toLowerCase().includes('url'))
+            || f.find(k => k.toLowerCase() === 'video_url');
+        cKey = f.find(k => k.toLowerCase() === 'caption')
+            || f.find(k => k.toLowerCase().includes('caption'));
+        if (!vKey || !cKey) { parser.abort(); hideLoading(); toast(`缺少 video_url/caption 字段。列: ${f.join(', ')}`, 'error'); return; }
       }
-
-      if (rowNum >= start && rowNum < start + batch) {
-        const videoUrl = row.data[videoUrlKey] || '';
-        const captionRaw = row.data[captionKey] || '';
-        let captionPreview = '';
-
-        try {
-          let parsed = JSON.parse(captionRaw);
-          if (Array.isArray(parsed) && parsed[0]) parsed = parsed[0];
-          captionPreview = parsed.global_caption?.slice(0, 60) || parsed.segments?.[0]?.action_label || '';
-        } catch {
-          captionPreview = captionRaw.slice(0, 60);
-        }
-
-        records.push({
-          rowNum,
-          videoUrl,
-          captionRaw,
-          captionPreview,
-          filename: extractFilename(videoUrl),
-        });
+      if (row >= start && row < start + batch) {
+        const url = r.data[vKey] || '', raw = r.data[cKey] || '';
+        let preview = '';
+        try { let p = JSON.parse(raw); if (Array.isArray(p)&&p[0]) p=p[0]; preview = p.global_caption?.slice(0,50) || p.segments?.[0]?.action_label || ''; } catch { preview = raw.slice(0,50); }
+        records.push({ row: row, url, raw, preview, name: extractName(url) });
       }
-
-      if (rowNum >= start + batch) {
-        parser.abort();
-      }
+      if (row >= start + batch) parser.abort();
     },
     complete: () => {
       hideLoading();
-      filteredRecords = [...records];
-      selectedIndex = -1;
-      renderRecordList();
-      updateStats(start, batch);
-      toast(`已加载 ${records.length} 条记录`, 'success');
+      filtered = [...records];
+      selIdx = -1;
+      renderList();
+      $('#dpStats').textContent = `第${start}-${Math.min(start+batch-1,totalRows)}行 / 共${totalRows}行`;
+      $('#btnPrevPage').disabled = start <= 1;
+      $('#btnNextPage').disabled = start + batch > totalRows;
+      toast(`已加载 ${records.length} 条`, 'success');
     },
-    error: err => {
-      hideLoading();
-      toast('加载失败: ' + err.message, 'error');
-    }
+    error: err => { hideLoading(); toast('加载失败', 'error'); }
   });
 }
 
-function updateStats(start, batch) {
-  const bar = $('#statsBar');
-  bar.classList.add('visible');
-  $('#statsText').textContent = `第 ${start}-${Math.min(start + batch - 1, totalRows)} 行 / 共 ${totalRows} 行`;
-  $('#searchBox').classList.add('visible');
+$('#btnPrevPage').addEventListener('click', () => { const b=parseInt($('#batchSize').value)||200, c=parseInt($('#startRow').value)||1; $('#startRow').value=Math.max(1,c-b); loadRecords(); });
+$('#btnNextPage').addEventListener('click', () => { const b=parseInt($('#batchSize').value)||200, c=parseInt($('#startRow').value)||1; if(c+b<=totalRows){$('#startRow').value=c+b; loadRecords();} });
 
-  $('#btnPrevPage').disabled = start <= 1;
-  $('#btnNextPage').disabled = start + batch > totalRows;
-}
-
-$('#btnPrevPage').addEventListener('click', () => {
-  const batch = parseInt($('#batchSize').value) || 200;
-  const cur = parseInt($('#startRow').value) || 1;
-  $('#startRow').value = Math.max(1, cur - batch);
-  loadRecords();
-});
-
-$('#btnNextPage').addEventListener('click', () => {
-  const batch = parseInt($('#batchSize').value) || 200;
-  const cur = parseInt($('#startRow').value) || 1;
-  if (cur + batch <= totalRows) {
-    $('#startRow').value = cur + batch;
-    loadRecords();
-  }
-});
-
-// ── Search ──
 $('#searchInput').addEventListener('input', () => {
   const q = $('#searchInput').value.trim().toLowerCase();
-  if (!q) {
-    filteredRecords = [...records];
-  } else {
-    filteredRecords = records.filter(r =>
-      r.videoUrl.toLowerCase().includes(q) ||
-      r.captionPreview.toLowerCase().includes(q) ||
-      r.filename.toLowerCase().includes(q) ||
-      String(r.rowNum).includes(q)
-    );
-  }
-  renderRecordList();
+  filtered = q ? records.filter(r => r.url.toLowerCase().includes(q) || r.preview.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || String(r.row).includes(q)) : [...records];
+  renderList();
 });
 
-// ── Render Record List ──
-function renderRecordList() {
-  const list = $('#recordList');
-  if (!filteredRecords.length) {
-    list.innerHTML = '<div class="empty-list">无匹配记录</div>';
-    return;
-  }
-
-  list.innerHTML = '';
-  filteredRecords.forEach((rec, i) => {
-    const div = document.createElement('div');
-    div.className = 'record-item' + (i === selectedIndex ? ' active' : '');
-    div.dataset.idx = i;
-    div.innerHTML = `
-      <div class="rec-idx">${rec.rowNum}</div>
-      <div class="rec-info">
-        <div class="rec-url">${rec.filename}</div>
-        <div class="rec-preview">${rec.captionPreview || '(无预览)'}</div>
-      </div>
-    `;
-    div.addEventListener('click', () => selectRecord(i));
-    list.appendChild(div);
+function renderList() {
+  const el = $('#recordScroll');
+  if (!filtered.length) { el.innerHTML = '<div class="dp-empty">无匹配记录</div>'; return; }
+  el.innerHTML = '';
+  filtered.forEach((r, i) => {
+    const d = document.createElement('div');
+    d.className = 'rec-chip' + (i === selIdx ? ' active' : '');
+    d.dataset.idx = i;
+    d.innerHTML = `<span class="rec-num">${r.row}</span><span class="rec-name">${r.name}</span>`;
+    d.addEventListener('click', () => selectRecord(i));
+    el.appendChild(d);
   });
 }
 
 // ── Select Record ──
 function selectRecord(idx) {
-  if (idx < 0 || idx >= filteredRecords.length) return;
+  if (idx < 0 || idx >= filtered.length) return;
+  selIdx = idx;
+  const rec = filtered[idx];
 
-  selectedIndex = idx;
-  const rec = filteredRecords[idx];
+  $$('.rec-chip').forEach((e,i) => e.classList.toggle('active', i===idx));
 
-  $$('.record-item').forEach((el, i) => el.classList.toggle('active', i === idx));
-
-  const activeEl = $(`.record-item[data-idx="${idx}"]`);
-  if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-  $('#recordHeader').style.display = 'flex';
-  $('#recordTitle').textContent = `#${rec.rowNum} — ${rec.filename}`;
-  $('#videoArea').style.display = 'block';
-  $('#emptyRight').style.display = 'none';
-  $('#videoError').style.display = 'none';
-
-  video.src = rec.videoUrl;
+  $('#curRecordInfo').innerHTML = `<strong>#${rec.row}</strong> — ${rec.name}`;
+  $('#videoPlaceholder').style.display = 'none';
+  video.style.display = 'block';
+  video.src = rec.url;
   video.load();
+  $('#videoError').style.display = 'none';
+  $('#emptyRight').style.display = 'none';
 
-  try {
-    let parsed = JSON.parse(rec.captionRaw);
-    if (Array.isArray(parsed) && parsed[0]) parsed = parsed[0];
-    currentCaption = parsed;
-  } catch {
-    currentCaption = null;
-  }
-
-  currentSegIdx = -1;
+  try { let p = JSON.parse(rec.raw); if (Array.isArray(p)&&p[0]) p=p[0]; caption=p; } catch { caption=null; }
+  segIdx = -1;
   renderCaption();
   renderTimeline();
   startRAF();
-
+  updateNav();
   $('#rightScroll').scrollTop = 0;
-  updateNavButtons();
+
+  collapsePanel();
 }
 
-function updateNavButtons() {
-  $('#btnPrev').disabled = selectedIndex <= 0;
-  $('#btnNext').disabled = selectedIndex >= filteredRecords.length - 1;
+function updateNav() {
+  $('#btnPrev').disabled = selIdx <= 0;
+  $('#btnNext').disabled = selIdx >= filtered.length - 1;
 }
 
-$('#btnPrev').addEventListener('click', () => { if (selectedIndex > 0) selectRecord(selectedIndex - 1); });
-$('#btnNext').addEventListener('click', () => { if (selectedIndex < filteredRecords.length - 1) selectRecord(selectedIndex + 1); });
+$('#btnPrev').addEventListener('click', () => { if (selIdx > 0) selectRecord(selIdx - 1); });
+$('#btnNext').addEventListener('click', () => { if (selIdx < filtered.length - 1) selectRecord(selIdx + 1); });
 
-// ── Video Events ──
-video.addEventListener('loadedmetadata', () => {
-  $('#durTime').textContent = fmtTime(video.duration);
-  renderTimeline();
-});
-
-video.addEventListener('error', () => {
-  $('#videoError').style.display = 'block';
-});
+video.addEventListener('loadedmetadata', () => { $('#durTime').textContent = fmtTime(video.duration); renderTimeline(); });
+video.addEventListener('error', () => { $('#videoError').style.display = 'block'; });
 
 // ── Render Caption ──
 function renderCaption() {
-  const gc = $('#globalCard');
-  const list = $('#segmentsList');
-
-  if (!currentCaption) {
-    gc.classList.remove('visible');
-    list.innerHTML = '<div style="text-align:center;padding:30px;color:#bbb;font-size:13px;">Caption 数据为空或格式错误</div>';
-    return;
-  }
-
+  const gc = $('#globalCard'), list = $('#segmentsList');
+  if (!caption) { gc.classList.remove('visible'); list.innerHTML = '<div style="text-align:center;padding:30px;color:#bbb;font-size:13px;">Caption 为空或格式错误</div>'; return; }
   gc.classList.add('visible');
-  $('#globalCaption').textContent = currentCaption.global_caption || '';
-  $('#controlAgent').textContent = currentCaption.control_agent || '';
-
+  $('#globalCaption').textContent = caption.global_caption || '';
+  $('#controlAgent').textContent = caption.control_agent || '';
   list.innerHTML = '';
-  const segs = currentCaption.segments || [];
-  segs.forEach((seg, i) => {
-    const s = parseFloat(seg.start_time);
-    const e = parseFloat(seg.end_time);
+  (caption.segments||[]).forEach((seg, i) => {
+    const s=parseFloat(seg.start_time), e=parseFloat(seg.end_time);
     const div = document.createElement('div');
-    div.className = 'seg-item';
-    div.id = `seg-${i}`;
-
-    let capHTML = '';
+    div.className = 'seg-item'; div.id = `seg-${i}`;
+    let cap = '';
     if (seg.caption) {
       const f = [];
       if (seg.caption.caption_abs) f.push(`<p><strong>绝对描述：</strong>${seg.caption.caption_abs}</p>`);
       if (seg.caption.caption_delta) f.push(`<p><strong>变化描述：</strong>${seg.caption.caption_delta}</p>`);
       if (seg.caption.end_state) f.push(`<p><strong>结束状态：</strong>${seg.caption.end_state}</p>`);
-      if (f.length) capHTML = `<div class="seg-caption-box">${f.join('')}</div>`;
+      if (f.length) cap = `<div class="seg-caption-box">${f.join('')}</div>`;
     }
-
-    div.innerHTML = `
-      <div class="seg-head">
-        <span class="seg-id" style="color:${segColor(i)}">Segment #${seg.segment_id || i + 1}</span>
-        <span class="seg-time-badge">${fmtTime(s)} — ${fmtTime(e)}</span>
-      </div>
-      ${seg.action_label ? `<div class="seg-action" style="background:${segColor(i)}">${seg.action_label}</div>` : ''}
-      ${capHTML}
-    `;
-
+    div.innerHTML = `<div class="seg-head"><span class="seg-id" style="color:${segColor(i)}">Segment #${seg.segment_id||i+1}</span><span class="seg-time-badge">${fmtTime(s)} — ${fmtTime(e)}</span></div>${seg.action_label?`<div class="seg-action" style="background:${segColor(i)}">${seg.action_label}</div>`:''}${cap}`;
     div.addEventListener('click', () => { video.currentTime = s; });
     list.appendChild(div);
   });
@@ -1107,105 +984,66 @@ function renderCaption() {
 
 // ── Timeline ──
 function renderTimeline() {
-  const box = $('#timelineBox');
-  const tl = $('#timeline');
-
-  if (!currentCaption?.segments?.length) { box.classList.remove('visible'); return; }
+  const box=$('#timelineBox'), tl=$('#timeline');
+  if (!caption?.segments?.length) { box.classList.remove('visible'); return; }
   box.classList.add('visible');
-
-  const segs = currentCaption.segments;
-  const dur = video.duration || Math.max(...segs.map(s => parseFloat(s.end_time))) || 1;
-
-  const pointer = $('#tlPointer');
-  tl.innerHTML = '';
-  tl.appendChild(pointer);
-
-  segs.forEach((seg, i) => {
-    const s = parseFloat(seg.start_time);
-    const e = parseFloat(seg.end_time);
-    const el = document.createElement('div');
-    el.className = 'tl-seg';
-    el.id = `tl-seg-${i}`;
-    el.style.left = (s / dur * 100) + '%';
-    el.style.width = ((e - s) / dur * 100) + '%';
-    el.style.background = segColor(i);
-    el.textContent = `#${seg.segment_id || i + 1}`;
-    el.addEventListener('click', ev => { ev.stopPropagation(); video.currentTime = s; });
+  const segs=caption.segments, dur=video.duration||Math.max(...segs.map(s=>parseFloat(s.end_time)))||1;
+  const ptr=$('#tlPointer'); tl.innerHTML=''; tl.appendChild(ptr);
+  segs.forEach((seg,i) => {
+    const s=parseFloat(seg.start_time), e=parseFloat(seg.end_time);
+    const el=document.createElement('div');
+    el.className='tl-seg'; el.id=`tl-seg-${i}`;
+    el.style.left=(s/dur*100)+'%'; el.style.width=((e-s)/dur*100)+'%';
+    el.style.background=segColor(i); el.textContent=`#${seg.segment_id||i+1}`;
+    el.addEventListener('click',ev=>{ev.stopPropagation();video.currentTime=s;});
     tl.appendChild(el);
   });
-
-  tl.addEventListener('click', e => {
-    if (e.target === tl) {
-      const rect = tl.getBoundingClientRect();
-      video.currentTime = ((e.clientX - rect.left) / rect.width) * dur;
-    }
-  });
-
-  const legs = $('#tlLegends');
-  legs.innerHTML = '';
-  segs.forEach((seg, i) => {
-    const el = document.createElement('div');
-    el.className = 'tl-leg';
-    el.dataset.index = i;
-    el.innerHTML = `<span class="tl-dot" style="background:${segColor(i)}"></span>#${seg.segment_id || i + 1} ${seg.action_label || ''}`;
-    el.addEventListener('click', () => {
-      video.currentTime = parseFloat(seg.start_time);
-      $(`#seg-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
-    legs.appendChild(el);
+  tl.onclick = e => { if(e.target===tl){const r=tl.getBoundingClientRect();video.currentTime=((e.clientX-r.left)/r.width)*dur;} };
+  const lg=$('#tlLegends'); lg.innerHTML='';
+  segs.forEach((seg,i) => {
+    const el=document.createElement('div');
+    el.className='tl-leg'; el.dataset.index=i;
+    el.innerHTML=`<span class="tl-dot" style="background:${segColor(i)}"></span>#${seg.segment_id||i+1} ${seg.action_label||''}`;
+    el.addEventListener('click',()=>{video.currentTime=parseFloat(seg.start_time);$(`#seg-${i}`)?.scrollIntoView({behavior:'smooth',block:'center'});});
+    lg.appendChild(el);
   });
 }
 
 // ── RAF Sync ──
 function rafLoop() {
-  if (!currentCaption || !video.duration) { rafId = requestAnimationFrame(rafLoop); return; }
-
-  const t = video.currentTime;
-  const dur = video.duration;
-  $('#tlPointer').style.left = (t / dur * 100) + '%';
-  $('#curTime').textContent = fmtTime(t);
-
-  let newIdx = -1;
-  (currentCaption.segments || []).forEach((seg, i) => {
-    if (t >= parseFloat(seg.start_time) && t < parseFloat(seg.end_time)) newIdx = i;
-  });
-
-  if (newIdx !== currentSegIdx) {
-    if (currentSegIdx >= 0) {
-      $(`#seg-${currentSegIdx}`)?.classList.remove('active');
-      $(`#tl-seg-${currentSegIdx}`)?.classList.remove('active');
-      $(`.tl-leg[data-index="${currentSegIdx}"]`)?.classList.remove('active');
-    }
-    currentSegIdx = newIdx;
-    if (currentSegIdx >= 0) {
-      const el = $(`#seg-${currentSegIdx}`);
-      if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-      $(`#tl-seg-${currentSegIdx}`)?.classList.add('active');
-      $(`.tl-leg[data-index="${currentSegIdx}"]`)?.classList.add('active');
+  if (!caption||!video.duration) { rafId=requestAnimationFrame(rafLoop); return; }
+  const t=video.currentTime, dur=video.duration;
+  $('#tlPointer').style.left=(t/dur*100)+'%';
+  $('#curTime').textContent=fmtTime(t);
+  let ni=-1;
+  (caption.segments||[]).forEach((seg,i)=>{if(t>=parseFloat(seg.start_time)&&t<parseFloat(seg.end_time))ni=i;});
+  if (ni!==segIdx) {
+    if (segIdx>=0) { $(`#seg-${segIdx}`)?.classList.remove('active'); $(`#tl-seg-${segIdx}`)?.classList.remove('active'); $(`.tl-leg[data-index="${segIdx}"]`)?.classList.remove('active'); }
+    segIdx=ni;
+    if (segIdx>=0) {
+      const el=$(`#seg-${segIdx}`);
+      if(el){el.classList.add('active');el.scrollIntoView({behavior:'smooth',block:'center'});}
+      $(`#tl-seg-${segIdx}`)?.classList.add('active');
+      $(`.tl-leg[data-index="${segIdx}"]`)?.classList.add('active');
     }
   }
-
-  rafId = requestAnimationFrame(rafLoop);
+  rafId=requestAnimationFrame(rafLoop);
 }
 
-function startRAF() {
-  if (rafId) cancelAnimationFrame(rafId);
-  rafLoop();
-}
+function startRAF() { if(rafId) cancelAnimationFrame(rafId); rafLoop(); }
 
 // ── Keyboard ──
 document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
-
-  if (e.code === 'Space') { e.preventDefault(); video.paused ? video.play() : video.pause(); }
-  if (e.code === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 2); }
-  if (e.code === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); video.currentTime = Math.min(video.duration || 0, video.currentTime + 2); }
-  if (e.code === 'ArrowUp' && e.shiftKey) { e.preventDefault(); if (selectedIndex > 0) selectRecord(selectedIndex - 1); }
-  if (e.code === 'ArrowDown' && e.shiftKey) { e.preventDefault(); if (selectedIndex < filteredRecords.length - 1) selectRecord(selectedIndex + 1); }
+  if (e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+  if (e.code==='Space') { e.preventDefault(); video.paused?video.play():video.pause(); }
+  if (e.code==='ArrowLeft'&&!e.shiftKey) { e.preventDefault(); video.currentTime=Math.max(0,video.currentTime-2); }
+  if (e.code==='ArrowRight'&&!e.shiftKey) { e.preventDefault(); video.currentTime=Math.min(video.duration||0,video.currentTime+2); }
+  if (e.code==='ArrowUp'&&e.shiftKey) { e.preventDefault(); if(selIdx>0) selectRecord(selIdx-1); }
+  if (e.code==='ArrowDown'&&e.shiftKey) { e.preventDefault(); if(selIdx<filtered.length-1) selectRecord(selIdx+1); }
+  if (e.code==='KeyD'&&(e.metaKey||e.ctrlKey)) { e.preventDefault(); btnToggle.click(); }
 });
 
-// ── Cleanup ──
-window.addEventListener('beforeunload', () => { if (rafId) cancelAnimationFrame(rafId); });
+window.addEventListener('beforeunload', () => { if(rafId) cancelAnimationFrame(rafId); });
 </script>
 </body>
 </html>
