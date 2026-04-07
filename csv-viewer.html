@@ -886,7 +886,7 @@ function loadRecords() {
       filtered = [...records];
       selIdx = -1;
       renderList();
-      $('#dpStats').textContent = `No${start}-${Math.min(start+batch-1,totalRows)}rows / total${totalRows}rows`;
+      $('#dpStats').textContent = `${start}-${Math.min(start+batch-1,totalRows)} / ${totalRows}`;
       $('#btnPrevPage').disabled = start <= 1;
       $('#btnNextPage').disabled = start + batch > totalRows;
       toast(`loaded ${records.length} lines`, 'success');
