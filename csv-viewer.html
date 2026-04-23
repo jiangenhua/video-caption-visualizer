@@ -963,9 +963,7 @@ function renderCaption() {
   gc.classList.add('visible');
   $('#globalCaption').textContent = caption.global_caption || '';
   $('#controlAgent').textContent = caption.control_agent || '';
-  $('#video_style').textContent = caption.video_style || '';
-  $('#global_lighting').textContent = caption.global_lighting || '';
-  $('#camera_perspective').textContent = caption.camera_perspective || '';
+
   list.innerHTML = '';
   (caption.segments||[]).forEach((seg, i) => {
     const s=parseFloat(seg.start_time), e=parseFloat(seg.end_time);
