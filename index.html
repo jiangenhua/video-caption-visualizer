@@ -796,8 +796,11 @@ function renderSubtitles() {
 
   const gc = $('#globalCard');
   gc.classList.add('visible');
-  $('#globalCaption').textContent = captionData.global_caption || '';
-  $('#controlAgent').textContent = captionData.control_agent || '';
+  $('#globalCaption').textContent = caption.global_caption || '';
+  $('#controlAgent').textContent = caption.control_agent || '';
+  $('#video_style').textContent = caption.video_style || '';
+  $('#global_lighting').textContent = caption.global_lighting || '';
+  $('#camera_perspective').textContent = caption.camera_perspective || '';
 
   const list = $('#segmentsList');
   list.innerHTML = '';
