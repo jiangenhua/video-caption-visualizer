@@ -495,29 +495,61 @@ body {
   border-bottom: 2.5px solid #667eea;
 }
 
-/* Global Card */
-.global-card {
+/* Meta Info Cards (adaptive fields) */
+.meta-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+
+.meta-card {
+  background: #fff;
+  border: 1.5px solid #e8eaf0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border-left: 4px solid #667eea;
+}
+
+.meta-card.primary {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
+  border: none;
   padding: 18px;
   border-radius: 12px;
-  margin-bottom: 16px;
-  display: none;
 }
 
-.global-card.visible { display: block; }
-.global-card h3 { font-size: 15px; margin-bottom: 8px; }
-.global-card p { line-height: 1.75; margin: 5px 0; font-size: 13px; }
+.meta-card.primary .meta-tag { background: rgba(255,255,255,0.2); color: #fff; }
+.meta-card.primary .meta-val { color: rgba(255,255,255,0.95); }
 
-.agent-tag {
+.meta-tag {
   display: inline-block;
-  background: rgba(255,255,255,0.2);
-  padding: 2px 8px;
+  padding: 2px 10px;
   border-radius: 4px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  background: #f0f3ff;
+  color: #667eea;
 }
+
+.meta-val { font-size: 13px; line-height: 1.75; color: #444; }
+
+.meta-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.meta-chip {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  border: 1.5px solid #e8eaf0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border-left: 4px solid #667eea;
+}
+
+.meta-chip .meta-tag { font-size: 9px; margin-bottom: 5px; }
+.meta-chip .meta-val { font-size: 12.5px; line-height: 1.5; }
 
 /* Segment Items */
 .seg-item {
@@ -739,15 +771,7 @@ body {
       <div class="panel-right-scroll" id="rightScroll">
         <div class="right-title" id="rightTitle">&#x1F4C4; Caption</div>
 
-        <div class="global-card" id="globalCard">
-          <h3>&#x1F30D; Global caption</h3>
-          <p id="globalCaption"></p>
-          <div style="margin-top:10px">
-            <span class="agent-tag">CONTROL AGENT</span>
-            <p id="controlAgent" style="margin-top:4px"></p>
-          </div>
-        </div>
-
+        <div class="meta-cards" id="metaCards"></div>
         <div id="segmentsList"></div>
 
         <div class="empty-right" id="emptyRight">
@@ -956,28 +980,73 @@ $('#btnNext').addEventListener('click', () => { if (selIdx < filtered.length - 1
 video.addEventListener('loadedmetadata', () => { $('#durTime').textContent = fmtTime(video.duration); renderTimeline(); });
 video.addEventListener('error', () => { $('#videoError').style.display = 'block'; });
 
-// ── Render Caption ──
+// ── Adaptive Field Labels ──
+const FIELD_LABELS = {
+  global_caption: 'Global Caption', global_lighting: 'Global Lighting',
+  video_style: 'Video Style', camera_perspective: 'Camera Perspective',
+  control_agent: 'Control Agent', caption_abs: 'Absolute Caption',
+  caption_delta: 'Delta Caption', end_state: 'End State',
+};
+const FIELD_COLORS = ['#667eea','#e74c3c','#27ae60','#f39c12','#9b59b6','#1abc9c','#e67e22','#2980b9'];
+
+function fieldLabel(key) {
+  return FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+const SHORT_FIELDS = new Set(['camera_perspective', 'video_style', 'global_lighting']);
+
+// ── Render Caption (adaptive) ──
 function renderCaption() {
-  const gc = $('#globalCard'), list = $('#segmentsList');
-  if (!caption) { gc.classList.remove('visible'); list.innerHTML = '<div style="text-align:center;padding:30px;color:#bbb;font-size:13px;">Caption missing or format error</div>'; return; }
-  gc.classList.add('visible');
-  $('#globalCaption').textContent = caption.global_caption || '';
-  $('#controlAgent').textContent = caption.control_agent || '';
+  const mc = $('#metaCards'), list = $('#segmentsList');
+  if (!caption) { mc.innerHTML = ''; list.innerHTML = '<div style="text-align:center;padding:30px;color:#bbb;font-size:13px;">Caption missing or format error</div>'; return; }
+
+  const allKeys = Object.keys(caption).filter(k => k !== 'segments' && caption[k]);
+  const longKeys = allKeys.filter(k => !SHORT_FIELDS.has(k));
+  const shortKeys = allKeys.filter(k => SHORT_FIELDS.has(k));
+
+  let html = '';
+
+  longKeys.forEach((key, i) => {
+    const isPrimary = key === 'global_caption';
+    const color = FIELD_COLORS[i % FIELD_COLORS.length];
+    html += `<div class="meta-card${isPrimary ? ' primary' : ''}" style="${isPrimary ? '' : 'border-left-color:' + color}">`;
+    html += `<div class="meta-tag" style="${isPrimary ? '' : 'background:' + color + '18;color:' + color}">${fieldLabel(key)}</div>`;
+    html += `<div class="meta-val">${caption[key]}</div>`;
+    html += `</div>`;
+  });
+
+  if (shortKeys.length) {
+    html += '<div class="meta-row">';
+    shortKeys.forEach((key, i) => {
+      const ci = longKeys.length + i;
+      const color = FIELD_COLORS[ci % FIELD_COLORS.length];
+      html += `<div class="meta-chip" style="border-left-color:${color}">`;
+      html += `<div class="meta-tag" style="background:${color}18;color:${color}">${fieldLabel(key)}</div>`;
+      html += `<div class="meta-val">${caption[key]}</div>`;
+      html += `</div>`;
+    });
+    html += '</div>';
+  }
+
+  mc.innerHTML = html;
 
   list.innerHTML = '';
   (caption.segments||[]).forEach((seg, i) => {
-    const s=parseFloat(seg.start_time), e=parseFloat(seg.end_time);
+    const s = parseFloat(seg.start_time), e = parseFloat(seg.end_time);
     const div = document.createElement('div');
     div.className = 'seg-item'; div.id = `seg-${i}`;
-    let cap = '';
-    if (seg.caption) {
-      const f = [];
-      if (seg.caption.caption_abs) f.push(`<p><strong>caption_abs：</strong>${seg.caption.caption_abs}</p>`);
-      if (seg.caption.caption_delta) f.push(`<p><strong>caption_delta：</strong>${seg.caption.caption_delta}</p>`);
-      if (seg.caption.end_state) f.push(`<p><strong>end_state：</strong>${seg.caption.end_state}</p>`);
-      if (f.length) cap = `<div class="seg-caption-box">${f.join('')}</div>`;
+
+    let capHTML = '';
+    if (seg.caption && typeof seg.caption === 'object') {
+      const capKeys = Object.keys(seg.caption).filter(k => seg.caption[k]);
+      if (capKeys.length) {
+        capHTML = '<div class="seg-caption-box">' +
+          capKeys.map(k => `<p><strong>${fieldLabel(k)}：</strong>${seg.caption[k]}</p>`).join('') +
+          '</div>';
+      }
     }
-    div.innerHTML = `<div class="seg-head"><span class="seg-id" style="color:${segColor(i)}">Segment #${seg.segment_id||i+1}</span><span class="seg-time-badge">${fmtTime(s)} — ${fmtTime(e)}</span></div>${seg.action_label?`<div class="seg-action" style="background:${segColor(i)}">${seg.action_label}</div>`:''}${cap}`;
+
+    div.innerHTML = `<div class="seg-head"><span class="seg-id" style="color:${segColor(i)}">Segment #${seg.segment_id||i+1}</span><span class="seg-time-badge">${fmtTime(s)} — ${fmtTime(e)}</span></div>${seg.action_label?`<div class="seg-action" style="background:${segColor(i)}">${seg.action_label}</div>`:''}${capHTML}`;
     div.addEventListener('click', () => { video.currentTime = s; });
     list.appendChild(div);
   });
