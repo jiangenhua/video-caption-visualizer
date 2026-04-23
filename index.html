@@ -796,8 +796,8 @@ function renderSubtitles() {
 
   const gc = $('#globalCard');
   gc.classList.add('visible');
-  $('#globalCaption').textContent = caption.global_caption || '';
-  $('#controlAgent').textContent = caption.control_agent || '';
+  $('#globalCaption').textContent = captionData.global_caption || '';
+  $('#controlAgent').textContent = captionData.control_agent || '';
 
   const list = $('#segmentsList');
   list.innerHTML = '';
