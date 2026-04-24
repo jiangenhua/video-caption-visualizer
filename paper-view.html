@@ -403,14 +403,43 @@ body {
 
 .g-field.primary .g-field-value { font-size: 13.5px; line-height: 1.75; }
 
-/* Main Split: Video + Segment */
-.main-split {
-  flex: 1;
+/* Stack of (video + segment) rows per segment */
+.segments-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.segment-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
-  min-height: 0;
+  align-items: stretch;
 }
+
+.segment-row .video-cell, .segment-row .seg-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.segment-row .video-cell { padding: 12px; justify-content: center; }
+
+.stack-empty {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.stack-empty-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
 
 .video-section, .segment-section {
   background: var(--surface);
@@ -751,8 +780,7 @@ body.screenshot-mode .screenshot-exit { display: inline-flex; }
 
 /* Responsive */
 @media (max-width: 1100px) {
-  .main-split { grid-template-columns: 1fr; }
-  .video-section, .segment-section { min-height: 400px; }
+  .segment-row { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -826,36 +854,12 @@ body.screenshot-mode .screenshot-exit { display: inline-flex; }
       </div>
     </section>
 
-    <!-- Bottom: Video + Segment -->
-    <div class="main-split">
-      <section class="video-section">
-        <div class="video-wrap" id="videoWrap">
-          <video id="videoPlayer" controls style="display:none"></video>
-          <div class="video-placeholder" id="videoPlaceholder">
-            <div class="video-placeholder-icon">&#x1F3AC;</div>
-            <div>Select a record to play video</div>
-          </div>
-        </div>
-        <div class="video-error" id="videoError">Video failed to load. Check if the URL is accessible.</div>
-        <div class="timeline-box" id="timelineBox">
-          <div class="tl-header">
-            <span class="tl-label">Timeline</span>
-            <span class="tl-time"><span class="cur" id="curTime">0:00.0</span> / <span id="durTime">0:00.0</span></span>
-          </div>
-          <div class="timeline" id="timeline">
-            <div class="tl-pointer" id="tlPointer"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="segment-section">
-        <div id="segContainer" style="flex:1;display:flex;flex-direction:column;min-height:0">
-          <div class="seg-empty" id="segEmpty">
-            <div class="seg-empty-icon">&#x1F4AC;</div>
-            <div>Segment details appear as the video plays</div>
-          </div>
-        </div>
-      </section>
+    <!-- Bottom: Stacked rows of (video + segment) per segment -->
+    <div class="segments-stack" id="segmentsStack">
+      <div class="stack-empty">
+        <div class="stack-empty-icon">&#x1F3AC;</div>
+        <div>Select a record to view segments side-by-side with the video</div>
+      </div>
     </div>
   </div>
 </div>
@@ -893,8 +897,7 @@ function fieldLabel(key) {
 function segColor(i) { return SEG_COLORS[i % SEG_COLORS.length]; }
 
 let csvFile = null, totalRows = 0, records = [], filtered = [], selIdx = -1;
-let caption = null, segIdx = -1, rafId = null;
-const video = $('#videoPlayer');
+let caption = null, currentVideoUrl = '';
 
 // ── Utils ──
 function toast(msg, type='info') {
@@ -1041,19 +1044,12 @@ function selectRecord(idx) {
   $$('.rec-chip').forEach((e, i) => e.classList.toggle('active', i === idx));
 
   $('#toolbarInfo').innerHTML = `<strong>#${rec.row}</strong> · ${rec.name}`;
-  $('#videoPlaceholder').style.display = 'none';
-  video.style.display = 'block';
-  video.src = rec.url;
-  video.load();
-  $('#videoError').style.display = 'none';
+  currentVideoUrl = rec.url;
 
   try { let p = JSON.parse(rec.raw); if(Array.isArray(p)&&p[0]) p=p[0]; caption=p; } catch { caption=null; }
-  segIdx = -1;
 
   renderGlobalFields();
-  renderTimeline();
-  renderCurrentSegment(0);
-  startRAF();
+  renderSegmentsStack();
   updateNav();
   collapsePanel();
 }
@@ -1065,10 +1061,6 @@ function updateNav() {
 
 $('#btnPrev').addEventListener('click', () => { if(selIdx > 0) selectRecord(selIdx - 1); });
 $('#btnNext').addEventListener('click', () => { if(selIdx < filtered.length - 1) selectRecord(selIdx + 1); });
-
-// ── Video Events ──
-video.addEventListener('loadedmetadata', () => { $('#durTime').textContent = fmtTime(video.duration); renderTimeline(); });
-video.addEventListener('error', () => { $('#videoError').style.display = 'block'; });
 
 // ── Render Global Fields (adaptive) ──
 const SHORT_FIELDS = new Set(['global_lighting', 'video_style', 'camera_perspective']);
@@ -1111,138 +1103,75 @@ function escapeHTML(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// ── Render Current Segment ──
-function renderCurrentSegment(idx) {
-  const wrap = $('#segContainer');
+// ── Render Segments Stack (one row per segment, with same video) ──
+function renderSegmentsStack() {
+  const stack = $('#segmentsStack');
   if (!caption?.segments?.length) {
-    wrap.innerHTML = '<div class="seg-empty"><div class="seg-empty-icon">&#x1F4AC;</div><div>No segments in caption</div></div>';
+    stack.innerHTML = '<div class="stack-empty"><div class="stack-empty-icon">&#x1F4AC;</div><div>No segments found in caption</div></div>';
     return;
   }
 
-  const total = caption.segments.length;
-  if (idx < 0) idx = 0;
-  if (idx >= total) idx = total - 1;
-
-  const seg = caption.segments[idx];
-  const color = segColor(idx);
-  const s = parseFloat(seg.start_time), e = parseFloat(seg.end_time);
-
-  let capFields = '';
-  if (seg.caption && typeof seg.caption === 'object') {
-    const capKeys = Object.keys(seg.caption).filter(k => seg.caption[k]);
-    capFields = capKeys.map(k => `
-      <div class="seg-field" style="border-left-color:${color}">
-        <div class="seg-field-label" style="color:${color}">${fieldLabel(k)}</div>
-        <div class="seg-field-value">${escapeHTML(seg.caption[k])}</div>
-      </div>`).join('');
-  }
-
-  wrap.innerHTML = `
-    <div class="seg-panel" key="${idx}">
-      <div class="seg-top">
-        <span class="seg-id-badge" style="color:${color}">
-          <span class="seg-id-dot" style="background:${color}"></span>
-          Segment #${seg.segment_id || idx+1}
-        </span>
-        <span class="seg-time">${fmtTime(s)} — ${fmtTime(e)}</span>
-      </div>
-      ${seg.action_label ? `<div class="seg-action-block">
-        <div class="seg-field-label" style="color:${color}">Action Label</div>
-        <div class="seg-action" style="background:${color}">${escapeHTML(seg.action_label)}</div>
-      </div>` : ''}
-      <div class="seg-body">${capFields || '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px">No caption fields</div>'}</div>
-      <div class="seg-nav">
-        <button class="btn" id="btnSegPrev" ${idx<=0?'disabled':''}>&#x25C0; Prev Seg</button>
-        <span class="seg-nav-info">Segment ${idx+1} of ${total}</span>
-        <button class="btn" id="btnSegNext" ${idx>=total-1?'disabled':''}>Next Seg &#x25B6;</button>
-      </div>
-    </div>
-  `;
-
-  $('#btnSegPrev')?.addEventListener('click', () => {
-    if (idx > 0) { video.currentTime = parseFloat(caption.segments[idx-1].start_time); }
-  });
-  $('#btnSegNext')?.addEventListener('click', () => {
-    if (idx < total-1) { video.currentTime = parseFloat(caption.segments[idx+1].start_time); }
-  });
-}
-
-// ── Timeline ──
-function renderTimeline() {
-  const box = $('#timelineBox'), tl = $('#timeline');
-  if (!caption?.segments?.length) { box.classList.remove('visible'); return; }
-  box.classList.add('visible');
-
   const segs = caption.segments;
-  const dur = video.duration || Math.max(...segs.map(s=>parseFloat(s.end_time))) || 1;
-  const ptr = $('#tlPointer');
-  tl.innerHTML = '';
-  tl.appendChild(ptr);
+  let html = '';
 
   segs.forEach((seg, i) => {
     const s = parseFloat(seg.start_time), e = parseFloat(seg.end_time);
-    const el = document.createElement('div');
-    el.className = 'tl-seg';
-    el.id = `tl-seg-${i}`;
-    el.style.left = (s/dur*100)+'%';
-    el.style.width = ((e-s)/dur*100)+'%';
-    el.style.background = segColor(i);
-    el.textContent = `#${seg.segment_id || i+1}`;
-    el.addEventListener('click', ev => { ev.stopPropagation(); video.currentTime = s; });
-    tl.appendChild(el);
-  });
+    const color = segColor(i);
 
-  tl.onclick = e => {
-    if (e.target === tl) {
-      const r = tl.getBoundingClientRect();
-      video.currentTime = ((e.clientX - r.left) / r.width) * dur;
+    let capFields = '';
+    if (seg.caption && typeof seg.caption === 'object') {
+      const capKeys = Object.keys(seg.caption).filter(k => seg.caption[k]);
+      capFields = capKeys.map(k => `
+        <div class="seg-field" style="border-left-color:${color}">
+          <div class="seg-field-label" style="color:${color}">${fieldLabel(k)}</div>
+          <div class="seg-field-value">${escapeHTML(seg.caption[k])}</div>
+        </div>`).join('');
     }
-  };
-}
 
-// ── RAF Sync ──
-function rafLoop() {
-  if (!caption || !video.duration) { rafId = requestAnimationFrame(rafLoop); return; }
-  const t = video.currentTime, dur = video.duration;
-  $('#tlPointer').style.left = (t/dur*100)+'%';
-  $('#curTime').textContent = fmtTime(t);
-
-  let ni = -1;
-  (caption.segments||[]).forEach((seg, i) => {
-    if (t >= parseFloat(seg.start_time) && t < parseFloat(seg.end_time)) ni = i;
+    html += `
+      <div class="segment-row">
+        <div class="video-cell">
+          <div class="video-wrap">
+            <video controls preload="metadata" data-start="${s}" data-end="${e}" src="${escapeHTML(currentVideoUrl)}"></video>
+          </div>
+        </div>
+        <div class="seg-cell">
+          <div class="seg-top">
+            <span class="seg-id-badge" style="color:${color}">
+              <span class="seg-id-dot" style="background:${color}"></span>
+              Segment #${seg.segment_id || i+1}
+            </span>
+            <span class="seg-time">${fmtTime(s)} — ${fmtTime(e)}</span>
+          </div>
+          ${seg.action_label ? `<div class="seg-action-block">
+            <div class="seg-field-label" style="color:${color}">Action Label</div>
+            <div class="seg-action" style="background:${color}">${escapeHTML(seg.action_label)}</div>
+          </div>` : ''}
+          <div class="seg-body">${capFields || '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px">No caption fields</div>'}</div>
+        </div>
+      </div>
+    `;
   });
 
-  if (ni === -1) {
-    const first = parseFloat(caption.segments[0].start_time);
-    ni = t < first ? 0 : caption.segments.length - 1;
-  }
+  stack.innerHTML = html;
 
-  if (ni !== segIdx) {
-    if (segIdx >= 0) $(`#tl-seg-${segIdx}`)?.classList.remove('active');
-    segIdx = ni;
-    $(`#tl-seg-${segIdx}`)?.classList.add('active');
-    renderCurrentSegment(segIdx);
-  }
-
-  rafId = requestAnimationFrame(rafLoop);
+  stack.querySelectorAll('video').forEach(v => {
+    const start = parseFloat(v.dataset.start || 0);
+    v.addEventListener('loadedmetadata', () => {
+      try { if (start > 0 && start < v.duration) v.currentTime = start; } catch {}
+    }, { once: true });
+  });
 }
-
-function startRAF() { if(rafId) cancelAnimationFrame(rafId); rafLoop(); }
 
 // ── Keyboard ──
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
-  if (e.code === 'Space') { e.preventDefault(); video.paused ? video.play() : video.pause(); }
-  if (e.code === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 2); }
-  if (e.code === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); video.currentTime = Math.min(video.duration||0, video.currentTime + 2); }
   if (e.code === 'ArrowUp' && e.shiftKey) { e.preventDefault(); if(selIdx > 0) selectRecord(selIdx - 1); }
   if (e.code === 'ArrowDown' && e.shiftKey) { e.preventDefault(); if(selIdx < filtered.length - 1) selectRecord(selIdx + 1); }
   if (e.code === 'KeyD' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); btnToggle.click(); }
   if (e.code === 'KeyS' && (e.metaKey || e.ctrlKey) && e.shiftKey) { e.preventDefault(); $('#btnScreenshot').click(); }
   if (e.code === 'Escape' && document.body.classList.contains('screenshot-mode')) { $('#btnExitScreenshot').click(); }
 });
-
-window.addEventListener('beforeunload', () => { if(rafId) cancelAnimationFrame(rafId); });
 </script>
 </body>
 </html>
