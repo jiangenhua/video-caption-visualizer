@@ -819,10 +819,6 @@ body.screenshot-mode .screenshot-exit { display: inline-flex; }
   <div class="paper-layout">
     <!-- Top: Global Fields -->
     <section class="global-section">
-      <div class="section-header">
-        <span class="section-label">Global Context</span>
-        <span class="section-title" id="globalSubtitle">—</span>
-      </div>
       <div class="global-grid" id="globalGrid">
         <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;grid-column:1/-1">
           Select a record to display global caption fields
@@ -833,10 +829,6 @@ body.screenshot-mode .screenshot-exit { display: inline-flex; }
     <!-- Bottom: Video + Segment -->
     <div class="main-split">
       <section class="video-section">
-        <div class="section-header">
-          <span class="section-label">Video</span>
-          <span class="section-title" id="videoSubtitle">—</span>
-        </div>
         <div class="video-wrap" id="videoWrap">
           <video id="videoPlayer" controls style="display:none"></video>
           <div class="video-placeholder" id="videoPlaceholder">
@@ -857,10 +849,6 @@ body.screenshot-mode .screenshot-exit { display: inline-flex; }
       </section>
 
       <section class="segment-section">
-        <div class="section-header">
-          <span class="section-label">Current Segment</span>
-          <span class="section-title" id="segSubtitle">—</span>
-        </div>
         <div id="segContainer" style="flex:1;display:flex;flex-direction:column;min-height:0">
           <div class="seg-empty" id="segEmpty">
             <div class="seg-empty-icon">&#x1F4AC;</div>
@@ -1053,8 +1041,6 @@ function selectRecord(idx) {
   $$('.rec-chip').forEach((e, i) => e.classList.toggle('active', i === idx));
 
   $('#toolbarInfo').innerHTML = `<strong>#${rec.row}</strong> · ${rec.name}`;
-  $('#videoSubtitle').textContent = rec.name;
-  $('#globalSubtitle').textContent = `Row ${rec.row}`;
   $('#videoPlaceholder').style.display = 'none';
   video.style.display = 'block';
   video.src = rec.url;
@@ -1103,10 +1089,8 @@ function renderGlobalFields() {
   };
 
   const longKeys = allKeys.filter(k => !SHORT_FIELDS.has(k.toLowerCase())).sort(sortFn);
-  const shortKeys = allKeys.filter(k => SHORT_FIELDS.has(k.toLowerCase())).sort(sortFn);
 
   let html = '';
-
   longKeys.forEach((key, i) => {
     const isPrimary = key.toLowerCase() === PRIMARY_FIELD;
     const color = SEG_COLORS[i % SEG_COLORS.length];
@@ -1118,19 +1102,6 @@ function renderGlobalFields() {
       <div class="g-field-value">${escapeHTML(caption[key])}</div>
     </div>`;
   });
-
-  if (shortKeys.length) {
-    html += '<div class="g-row">';
-    shortKeys.forEach((key, i) => {
-      const ci = longKeys.length + i;
-      const color = SEG_COLORS[ci % SEG_COLORS.length];
-      html += `<div class="g-field" style="border-left-color:${color}">
-        <div class="g-field-label" style="color:${color}">${fieldLabel(key)}</div>
-        <div class="g-field-value">${escapeHTML(caption[key])}</div>
-      </div>`;
-    });
-    html += '</div>';
-  }
 
   grid.innerHTML = html;
 }
@@ -1145,7 +1116,6 @@ function renderCurrentSegment(idx) {
   const wrap = $('#segContainer');
   if (!caption?.segments?.length) {
     wrap.innerHTML = '<div class="seg-empty"><div class="seg-empty-icon">&#x1F4AC;</div><div>No segments in caption</div></div>';
-    $('#segSubtitle').textContent = '—';
     return;
   }
 
@@ -1156,8 +1126,6 @@ function renderCurrentSegment(idx) {
   const seg = caption.segments[idx];
   const color = segColor(idx);
   const s = parseFloat(seg.start_time), e = parseFloat(seg.end_time);
-
-  $('#segSubtitle').textContent = `${idx+1} / ${total}`;
 
   let capFields = '';
   if (seg.caption && typeof seg.caption === 'object') {
