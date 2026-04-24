@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paper Figure Viewer</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f5f6fa;
+  --surface: #fff;
+  --border: #e2e5ee;
+  --border-strong: #cfd4e0;
+  --text: #1a1d2e;
+  --text-soft: #5a6070;
+  --text-muted: #9aa0b5;
+  --accent: #4f46e5;
+  --accent-soft: #eef0ff;
+  --c1: #4f46e5;
+  --c2: #0891b2;
+  --c3: #059669;
+  --c4: #d97706;
+  --c5: #dc2626;
+  --c6: #9333ea;
+  --c7: #db2777;
+  --c8: #0284c7;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+body {
+  font-family: -apple-system, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--text);
+  padding: 16px;
+  line-height: 1.55;
+}
+
+.app {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: calc(100vh - 32px);
+}
+
+/* ───── Top Toolbar ───── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.toolbar-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+.toolbar-sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+
+.toolbar-info {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toolbar-info strong { color: var(--text); font-weight: 600; }
+
+.toolbar-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: default; background: var(--surface); color: var(--text-muted); border-color: var(--border); }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: #6366f1; color: #fff; border-color: #6366f1; }
+.btn-primary:disabled { background: #c7c9d4; border-color: #c7c9d4; color: #fff; }
+
+.btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ───── Collapsible Data Panel ───── */
+.data-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, margin 0.3s ease;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.data-panel.open { max-height: 400px; }
+
+.data-inner {
+  padding: 14px 16px;
+  display: flex;
+  gap: 16px;
+}
+
+.dp-col-left {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-zone {
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 16px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg);
+}
+
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.upload-zone.has-file { padding: 10px; border-style: solid; border-color: var(--border-strong); }
+
+.upload-icon { font-size: 20px; margin-bottom: 4px; }
+.upload-text { font-size: 12px; color: var(--text-soft); font-weight: 500; }
+.upload-hint { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+.upload-zone.has-file .upload-hint { display: none; }
+
+#fileInput { display: none; }
+
+.config-row { display: flex; gap: 6px; align-items: center; }
+.config-label { font-size: 11px; color: var(--text-soft); white-space: nowrap; }
+.config-input {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  text-align: center;
+  color: var(--text);
+  min-width: 0;
+  font-family: inherit;
+}
+.config-input:focus { outline: none; border-color: var(--accent); }
+
+.config-info { font-size: 11px; color: var(--text-muted); }
+
+.btn-load {
+  width: 100%;
+  padding: 7px 0;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-load:hover { background: #6366f1; }
+.btn-load:disabled { background: #c7c9d4; cursor: default; }
+
+.dp-col-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dp-stats { font-size: 11px; color: var(--accent); font-weight: 600; }
+
+.page-btns { display: flex; gap: 4px; }
+.page-btn {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-soft);
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-btn:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.page-btn:disabled { opacity: 0.3; cursor: default; }
+
+.search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text);
+}
+.search-input:focus { outline: none; border-color: var(--accent); }
+
+.record-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-content: flex-start;
+  max-height: 200px;
+}
+
+.rec-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: all 0.15s;
+  max-width: 240px;
+}
+
+.rec-chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+.rec-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.rec-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-soft);
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.rec-chip.active .rec-num { background: rgba(255,255,255,0.25); color: #fff; }
+
+.rec-name {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-empty { text-align: center; padding: 30px; color: var(--text-muted); font-size: 12px; width: 100%; }
+
+/* ───── Paper Layout (main content) ───── */
+.paper-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+/* Global Fields Section (top) */
+.global-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  flex-shrink: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  padding: 3px 10px;
+  background: var(--accent-soft);
+  border-radius: 4px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.global-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.global-grid.has-primary {
+  grid-template-areas: "primary primary primary primary";
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.g-field {
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--c1);
+}
+
+.g-field.primary {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #eef0ff 0%, #f0eefe 100%);
+  border-left: none;
+  border: 1px solid #d5d7f0;
+  padding: 12px 16px;
+}
+
+.g-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--accent);
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.g-field-label::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.g-field.primary .g-field-label { font-size: 11px; }
+
+.g-field-value {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.g-field.primary .g-field-value { font-size: 13.5px; line-height: 1.75; }
+
+/* Main Split: Video + Segment */
+.main-split {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  min-height: 0;
+}
+
+.video-section, .segment-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.video-wrap video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.video-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: #999;
+  font-size: 13px;
+  background: #222;
+}
+
+.video-placeholder-icon { font-size: 36px; opacity: 0.5; }
+
+.video-error {
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
+  color: #b91c1c;
+  font-size: 12px;
+  margin-top: 8px;
+  display: none;
+  text-align: center;
+}
+
+/* Timeline */
+.timeline-box {
+  margin-top: 12px;
+  display: none;
+  flex-shrink: 0;
+}
+
+.timeline-box.visible { display: block; }
+
+.tl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.tl-label { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.5px; }
+.tl-time { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.tl-time .cur { color: var(--text); font-weight: 600; }
+
+.timeline {
+  position: relative;
+  height: 34px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.tl-seg {
+  position: absolute;
+  height: 100%;
+  top: 0;
+  opacity: 0.55;
+  border-right: 1.5px solid var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  transition: opacity 0.2s;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.tl-seg:hover { opacity: 0.85; }
+.tl-seg.active { opacity: 1; }
+
+.tl-pointer {
+  position: absolute;
+  width: 2.5px;
+  height: 100%;
+  background: #dc2626;
+  top: 0; left: 0;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 0 6px rgba(220,38,38,0.5);
+}
+
+.tl-pointer::before {
+  content: '';
+  position: absolute;
+  top: -4px; left: -4px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid #dc2626;
+}
+
+/* Segment Panel (right) */
+.segment-section {
+  padding: 18px 22px;
+}
+
+.seg-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  animation: segFade 0.3s ease;
+}
+
+@keyframes segFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.seg-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.seg-id-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.seg-id-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.seg-time {
+  font-size: 12px;
+  color: var(--text-soft);
+  background: var(--bg);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.seg-progress {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.seg-action {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.seg-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.seg-field {
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--border-strong);
+}
+
+.seg-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 5px;
+  color: var(--text-soft);
+}
+
+.seg-field-value {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.seg-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.seg-empty-icon { font-size: 40px; opacity: 0.4; }
+
+.seg-nav {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.seg-nav-info {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Screenshot Mode ─── */
+.app.screenshot-mode .toolbar,
+.app.screenshot-mode .data-panel { display: none; }
+
+.app.screenshot-mode {
+  padding: 0;
+  max-width: 1400px;
+}
+
+.app.screenshot-mode .paper-layout { gap: 10px; }
+
+body.screenshot-mode { padding: 20px; background: #fff; }
+
+.screenshot-exit {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 999;
+  display: none;
+}
+
+body.screenshot-mode .screenshot-exit { display: inline-flex; }
+
+/* ─── Loading ─── */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading-overlay.visible { display: flex; }
+
+.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; color: var(--accent); font-weight: 500; }
+
+/* ─── Toast ─── */
+.toast-wrap {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.toast-msg {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: #fff;
+  animation: toastIn 0.3s ease;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  pointer-events: auto;
+}
+
+.toast-msg.success { background: #059669; }
+.toast-msg.error { background: #dc2626; }
+.toast-msg.info { background: var(--accent); }
+
+@keyframes toastIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .main-split { grid-template-columns: 1fr; }
+  .video-section, .segment-section { min-height: 400px; }
+}
+
+@media (max-width: 640px) {
+  body { padding: 10px; }
+  .data-inner { flex-direction: column; }
+  .dp-col-left { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- ── Top Toolbar ── -->
+  <div class="toolbar" id="toolbar">
+    <div class="toolbar-title">Paper Figure Viewer</div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-info" id="toolbarInfo">No data loaded</div>
+    <div class="toolbar-actions">
+      <button class="btn" id="btnPrev" disabled>&#x25C0; Prev</button>
+      <button class="btn" id="btnNext" disabled>Next &#x25B6;</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn" id="btnToggleData">&#x1F4C2; Data</button>
+      <button class="btn" id="btnScreenshot">&#x1F4F8; Screenshot Mode</button>
+    </div>
+  </div>
+
+  <!-- ── Data Panel ── -->
+  <div class="data-panel open" id="dataPanel">
+    <div class="data-inner">
+      <div class="dp-col-left">
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-icon">&#x1F4CA;</div>
+          <div class="upload-text">Click or drag CSV here</div>
+          <div class="upload-hint">needs video_url + caption</div>
+        </div>
+        <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
+        <div class="config-row">
+          <span class="config-label">From</span>
+          <input class="config-input" type="number" id="startRow" value="1" min="1">
+          <span class="config-label">Rows</span>
+          <input class="config-input" type="number" id="batchSize" value="200" min="1" max="500">
+        </div>
+        <div class="config-info" id="configInfo">Upload a CSV to begin</div>
+        <button class="btn-load" id="btnLoad" disabled>Load Data</button>
+      </div>
+
+      <div class="dp-col-right">
+        <div class="dp-header">
+          <span class="dp-stats" id="dpStats">-</span>
+          <div class="page-btns">
+            <button class="page-btn" id="btnPrevPage" disabled>&#x25C0;</button>
+            <button class="page-btn" id="btnNextPage" disabled>&#x25B6;</button>
+          </div>
+        </div>
+        <input class="search-input" id="searchInput" placeholder="&#x1F50D; Search records...">
+        <div class="record-scroll" id="recordScroll">
+          <div class="dp-empty">Upload a CSV to browse records</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Paper Layout ── -->
+  <div class="paper-layout">
+    <!-- Top: Global Fields -->
+    <section class="global-section">
+      <div class="section-header">
+        <span class="section-label">Global Context</span>
+        <span class="section-title" id="globalSubtitle">—</span>
+      </div>
+      <div class="global-grid" id="globalGrid">
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;grid-column:1/-1">
+          Select a record to display global caption fields
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom: Video + Segment -->
+    <div class="main-split">
+      <section class="video-section">
+        <div class="section-header">
+          <span class="section-label">Video</span>
+          <span class="section-title" id="videoSubtitle">—</span>
+        </div>
+        <div class="video-wrap" id="videoWrap">
+          <video id="videoPlayer" controls style="display:none"></video>
+          <div class="video-placeholder" id="videoPlaceholder">
+            <div class="video-placeholder-icon">&#x1F3AC;</div>
+            <div>Select a record to play video</div>
+          </div>
+        </div>
+        <div class="video-error" id="videoError">Video failed to load. Check if the URL is accessible.</div>
+        <div class="timeline-box" id="timelineBox">
+          <div class="tl-header">
+            <span class="tl-label">Timeline</span>
+            <span class="tl-time"><span class="cur" id="curTime">0:00.0</span> / <span id="durTime">0:00.0</span></span>
+          </div>
+          <div class="timeline" id="timeline">
+            <div class="tl-pointer" id="tlPointer"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="segment-section">
+        <div class="section-header">
+          <span class="section-label">Current Segment</span>
+          <span class="section-title" id="segSubtitle">—</span>
+        </div>
+        <div id="segContainer" style="flex:1;display:flex;flex-direction:column;min-height:0">
+          <div class="seg-empty" id="segEmpty">
+            <div class="seg-empty-icon">&#x1F4AC;</div>
+            <div>Segment details appear as the video plays</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<button class="btn screenshot-exit" id="btnExitScreenshot">&#x2715; Exit Screenshot</button>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Parsing CSV...</div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const SEG_COLORS = ['#4f46e5','#dc2626','#059669','#d97706','#9333ea','#0891b2','#db2777','#0284c7'];
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+const FIELD_LABELS = {
+  global_caption: 'Global Caption', global_lighting: 'Global Lighting',
+  video_style: 'Video Style', camera_perspective: 'Camera Perspective',
+  control_agent: 'Control Agent', video_hud_description: 'Video HUD Description',
+  hud_description: 'HUD Description', caption_abs: 'Absolute Caption',
+  caption_delta: 'Delta Caption', end_state: 'End State',
+};
+
+const PRIMARY_FIELD = 'global_caption';
+const FIELD_ORDER = ['global_caption','video_hud_description','hud_description','control_agent','global_lighting','video_style','camera_perspective'];
+
+function fieldLabel(key) {
+  const k = key.toLowerCase();
+  return FIELD_LABELS[k] || key.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function segColor(i) { return SEG_COLORS[i % SEG_COLORS.length]; }
+
+let csvFile = null, totalRows = 0, records = [], filtered = [], selIdx = -1;
+let caption = null, segIdx = -1, rafId = null;
+const video = $('#videoPlayer');
+
+// ── Utils ──
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  el.textContent = msg;
+  $('#toastWrap').appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }, 2400);
+}
+
+function fmtTime(s) {
+  if (!s || isNaN(s)) return '0:00.0';
+  return `${Math.floor(s/60)}:${(s%60).toFixed(1).padStart(4,'0')}`;
+}
+
+function showLoading(t) { $('#loadingText').textContent = t; $('#loadingOverlay').classList.add('visible'); }
+function hideLoading() { $('#loadingOverlay').classList.remove('visible'); }
+
+function extractName(url) {
+  try { const p = new URL(url).pathname.split('/').filter(Boolean); return p[p.length-1] || url.slice(0,40); }
+  catch { return url?.slice(0,40) || '-'; }
+}
+
+// ── Panel Toggle ──
+const dataPanel = $('#dataPanel');
+const btnToggle = $('#btnToggleData');
+
+btnToggle.addEventListener('click', () => {
+  const open = dataPanel.classList.toggle('open');
+  btnToggle.classList.toggle('active', open);
+});
+
+function collapsePanel() { dataPanel.classList.remove('open'); btnToggle.classList.remove('active'); }
+
+// ── Screenshot Mode ──
+$('#btnScreenshot').addEventListener('click', () => {
+  document.body.classList.add('screenshot-mode');
+  $('#app').classList.add('screenshot-mode');
+});
+
+$('#btnExitScreenshot').addEventListener('click', () => {
+  document.body.classList.remove('screenshot-mode');
+  $('#app').classList.remove('screenshot-mode');
+});
+
+// ── Upload ──
+const uploadZone = $('#uploadZone'), fileInput = $('#fileInput');
+
+uploadZone.addEventListener('click', () => { fileInput.value = ''; fileInput.click(); });
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleCSV(e.target.files[0]); });
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); if(e.dataTransfer.files[0]) handleCSV(e.dataTransfer.files[0]); });
+
+function handleCSV(file) {
+  csvFile = file;
+  uploadZone.classList.add('has-file');
+  uploadZone.querySelector('.upload-icon').innerHTML = '&#x1F504;';
+  uploadZone.querySelector('.upload-text').textContent = `${file.name} — Click to replace`;
+  showLoading('Counting rows...');
+  let c = 0;
+  Papa.parse(file, {
+    header: true,
+    step: () => c++,
+    complete: () => { totalRows = c; hideLoading(); $('#configInfo').textContent = `${totalRows} total rows`; $('#btnLoad').disabled = false; toast(`${file.name} · ${totalRows} rows`, 'success'); },
+    error: err => { hideLoading(); toast('Parse failed: '+err.message, 'error'); }
+  });
+}
+
+// ── Load ──
+$('#btnLoad').addEventListener('click', loadRecords);
+
+function loadRecords() {
+  if (!csvFile) return;
+  const start = Math.max(1, parseInt($('#startRow').value)||1);
+  const batch = Math.min(500, Math.max(1, parseInt($('#batchSize').value)||200));
+  showLoading(`Loading rows ${start}-${start+batch-1}...`);
+  records = [];
+  let row = 0, vKey = null, cKey = null;
+  Papa.parse(csvFile, {
+    header: true,
+    step: (r, parser) => {
+      row++;
+      if (row === 1) {
+        const f = Object.keys(r.data);
+        vKey = f.find(k => k.toLowerCase().replace(/[_\s-]/g,'') === 'videourl')
+            || f.find(k => k.toLowerCase().includes('video') && k.toLowerCase().includes('url'))
+            || f.find(k => k.toLowerCase() === 'video_url');
+        cKey = f.find(k => k.toLowerCase() === 'caption')
+            || f.find(k => k.toLowerCase().includes('caption'));
+        if (!vKey || !cKey) { parser.abort(); hideLoading(); toast(`Missing video_url/caption. Columns: ${f.join(', ')}`, 'error'); return; }
+      }
+      if (row >= start && row < start + batch) {
+        const url = r.data[vKey] || '', raw = r.data[cKey] || '';
+        let preview = '';
+        try { let p = JSON.parse(raw); if(Array.isArray(p)&&p[0]) p=p[0]; preview = p.global_caption?.slice(0,50) || p.segments?.[0]?.action_label || ''; } catch { preview = raw.slice(0,50); }
+        records.push({ row, url, raw, preview, name: extractName(url) });
+      }
+      if (row >= start + batch) parser.abort();
+    },
+    complete: () => {
+      hideLoading();
+      filtered = [...records];
+      selIdx = -1;
+      renderList();
+      $('#dpStats').textContent = `${start}-${Math.min(start+batch-1,totalRows)} / ${totalRows}`;
+      $('#btnPrevPage').disabled = start <= 1;
+      $('#btnNextPage').disabled = start + batch > totalRows;
+      toast(`Loaded ${records.length} records`, 'success');
+    },
+    error: () => { hideLoading(); toast('Load failed', 'error'); }
+  });
+}
+
+$('#btnPrevPage').addEventListener('click', () => { const b=parseInt($('#batchSize').value)||200, c=parseInt($('#startRow').value)||1; $('#startRow').value=Math.max(1,c-b); loadRecords(); });
+$('#btnNextPage').addEventListener('click', () => { const b=parseInt($('#batchSize').value)||200, c=parseInt($('#startRow').value)||1; if(c+b<=totalRows){$('#startRow').value=c+b; loadRecords();} });
+
+$('#searchInput').addEventListener('input', () => {
+  const q = $('#searchInput').value.trim().toLowerCase();
+  filtered = q ? records.filter(r => r.url.toLowerCase().includes(q) || r.preview.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || String(r.row).includes(q)) : [...records];
+  renderList();
+});
+
+function renderList() {
+  const el = $('#recordScroll');
+  if (!filtered.length) { el.innerHTML = '<div class="dp-empty">No matching records</div>'; return; }
+  el.innerHTML = '';
+  filtered.forEach((r, i) => {
+    const d = document.createElement('div');
+    d.className = 'rec-chip' + (i === selIdx ? ' active' : '');
+    d.dataset.idx = i;
+    d.innerHTML = `<span class="rec-num">${r.row}</span><span class="rec-name">${r.name}</span>`;
+    d.addEventListener('click', () => selectRecord(i));
+    el.appendChild(d);
+  });
+}
+
+// ── Select Record ──
+function selectRecord(idx) {
+  if (idx < 0 || idx >= filtered.length) return;
+  selIdx = idx;
+  const rec = filtered[idx];
+
+  $$('.rec-chip').forEach((e, i) => e.classList.toggle('active', i === idx));
+
+  $('#toolbarInfo').innerHTML = `<strong>#${rec.row}</strong> · ${rec.name}`;
+  $('#videoSubtitle').textContent = rec.name;
+  $('#globalSubtitle').textContent = `Row ${rec.row}`;
+  $('#videoPlaceholder').style.display = 'none';
+  video.style.display = 'block';
+  video.src = rec.url;
+  video.load();
+  $('#videoError').style.display = 'none';
+
+  try { let p = JSON.parse(rec.raw); if(Array.isArray(p)&&p[0]) p=p[0]; caption=p; } catch { caption=null; }
+  segIdx = -1;
+
+  renderGlobalFields();
+  renderTimeline();
+  renderCurrentSegment(0);
+  startRAF();
+  updateNav();
+  collapsePanel();
+}
+
+function updateNav() {
+  $('#btnPrev').disabled = selIdx <= 0;
+  $('#btnNext').disabled = selIdx >= filtered.length - 1;
+}
+
+$('#btnPrev').addEventListener('click', () => { if(selIdx > 0) selectRecord(selIdx - 1); });
+$('#btnNext').addEventListener('click', () => { if(selIdx < filtered.length - 1) selectRecord(selIdx + 1); });
+
+// ── Video Events ──
+video.addEventListener('loadedmetadata', () => { $('#durTime').textContent = fmtTime(video.duration); renderTimeline(); });
+video.addEventListener('error', () => { $('#videoError').style.display = 'block'; });
+
+// ── Render Global Fields (adaptive) ──
+function renderGlobalFields() {
+  const grid = $('#globalGrid');
+  if (!caption) { grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);grid-column:1/-1">No caption data</div>'; return; }
+
+  const allKeys = Object.keys(caption).filter(k => k !== 'segments' && caption[k]);
+
+  const sortedKeys = [...allKeys].sort((a, b) => {
+    const ai = FIELD_ORDER.indexOf(a.toLowerCase());
+    const bi = FIELD_ORDER.indexOf(b.toLowerCase());
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+
+  let html = '';
+  sortedKeys.forEach((key, i) => {
+    const isPrimary = key.toLowerCase() === PRIMARY_FIELD;
+    const color = SEG_COLORS[i % SEG_COLORS.length];
+    html += `<div class="g-field${isPrimary ? ' primary' : ''}" style="${isPrimary ? '' : 'border-left-color:' + color}">`;
+    html += `<div class="g-field-label" style="${isPrimary ? '' : 'color:' + color}">${fieldLabel(key)}</div>`;
+    html += `<div class="g-field-value">${escapeHTML(caption[key])}</div>`;
+    html += '</div>';
+  });
+
+  grid.innerHTML = html;
+}
+
+function escapeHTML(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Render Current Segment ──
+function renderCurrentSegment(idx) {
+  const wrap = $('#segContainer');
+  if (!caption?.segments?.length) {
+    wrap.innerHTML = '<div class="seg-empty"><div class="seg-empty-icon">&#x1F4AC;</div><div>No segments in caption</div></div>';
+    $('#segSubtitle').textContent = '—';
+    return;
+  }
+
+  const total = caption.segments.length;
+  if (idx < 0) idx = 0;
+  if (idx >= total) idx = total - 1;
+
+  const seg = caption.segments[idx];
+  const color = segColor(idx);
+  const s = parseFloat(seg.start_time), e = parseFloat(seg.end_time);
+
+  $('#segSubtitle').textContent = `${idx+1} / ${total}`;
+
+  let capFields = '';
+  if (seg.caption && typeof seg.caption === 'object') {
+    const capKeys = Object.keys(seg.caption).filter(k => seg.caption[k]);
+    capFields = capKeys.map(k => `
+      <div class="seg-field" style="border-left-color:${color}">
+        <div class="seg-field-label" style="color:${color}">${fieldLabel(k)}</div>
+        <div class="seg-field-value">${escapeHTML(seg.caption[k])}</div>
+      </div>`).join('');
+  }
+
+  wrap.innerHTML = `
+    <div class="seg-panel" key="${idx}">
+      <div class="seg-top">
+        <span class="seg-id-badge" style="color:${color}">
+          <span class="seg-id-dot" style="background:${color}"></span>
+          Segment #${seg.segment_id || idx+1}
+        </span>
+        <span class="seg-time">${fmtTime(s)} — ${fmtTime(e)}</span>
+      </div>
+      ${seg.action_label ? `<div class="seg-action" style="background:${color}">${escapeHTML(seg.action_label)}</div>` : ''}
+      <div class="seg-body">${capFields || '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px">No caption fields</div>'}</div>
+      <div class="seg-nav">
+        <button class="btn" id="btnSegPrev" ${idx<=0?'disabled':''}>&#x25C0; Prev Seg</button>
+        <span class="seg-nav-info">Segment ${idx+1} of ${total}</span>
+        <button class="btn" id="btnSegNext" ${idx>=total-1?'disabled':''}>Next Seg &#x25B6;</button>
+      </div>
+    </div>
+  `;
+
+  $('#btnSegPrev')?.addEventListener('click', () => {
+    if (idx > 0) { video.currentTime = parseFloat(caption.segments[idx-1].start_time); }
+  });
+  $('#btnSegNext')?.addEventListener('click', () => {
+    if (idx < total-1) { video.currentTime = parseFloat(caption.segments[idx+1].start_time); }
+  });
+}
+
+// ── Timeline ──
+function renderTimeline() {
+  const box = $('#timelineBox'), tl = $('#timeline');
+  if (!caption?.segments?.length) { box.classList.remove('visible'); return; }
+  box.classList.add('visible');
+
+  const segs = caption.segments;
+  const dur = video.duration || Math.max(...segs.map(s=>parseFloat(s.end_time))) || 1;
+  const ptr = $('#tlPointer');
+  tl.innerHTML = '';
+  tl.appendChild(ptr);
+
+  segs.forEach((seg, i) => {
+    const s = parseFloat(seg.start_time), e = parseFloat(seg.end_time);
+    const el = document.createElement('div');
+    el.className = 'tl-seg';
+    el.id = `tl-seg-${i}`;
+    el.style.left = (s/dur*100)+'%';
+    el.style.width = ((e-s)/dur*100)+'%';
+    el.style.background = segColor(i);
+    el.textContent = `#${seg.segment_id || i+1}`;
+    el.addEventListener('click', ev => { ev.stopPropagation(); video.currentTime = s; });
+    tl.appendChild(el);
+  });
+
+  tl.onclick = e => {
+    if (e.target === tl) {
+      const r = tl.getBoundingClientRect();
+      video.currentTime = ((e.clientX - r.left) / r.width) * dur;
+    }
+  };
+}
+
+// ── RAF Sync ──
+function rafLoop() {
+  if (!caption || !video.duration) { rafId = requestAnimationFrame(rafLoop); return; }
+  const t = video.currentTime, dur = video.duration;
+  $('#tlPointer').style.left = (t/dur*100)+'%';
+  $('#curTime').textContent = fmtTime(t);
+
+  let ni = -1;
+  (caption.segments||[]).forEach((seg, i) => {
+    if (t >= parseFloat(seg.start_time) && t < parseFloat(seg.end_time)) ni = i;
+  });
+
+  if (ni === -1) {
+    const first = parseFloat(caption.segments[0].start_time);
+    ni = t < first ? 0 : caption.segments.length - 1;
+  }
+
+  if (ni !== segIdx) {
+    if (segIdx >= 0) $(`#tl-seg-${segIdx}`)?.classList.remove('active');
+    segIdx = ni;
+    $(`#tl-seg-${segIdx}`)?.classList.add('active');
+    renderCurrentSegment(segIdx);
+  }
+
+  rafId = requestAnimationFrame(rafLoop);
+}
+
+function startRAF() { if(rafId) cancelAnimationFrame(rafId); rafLoop(); }
+
+// ── Keyboard ──
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); video.paused ? video.play() : video.pause(); }
+  if (e.code === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 2); }
+  if (e.code === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); video.currentTime = Math.min(video.duration||0, video.currentTime + 2); }
+  if (e.code === 'ArrowUp' && e.shiftKey) { e.preventDefault(); if(selIdx > 0) selectRecord(selIdx - 1); }
+  if (e.code === 'ArrowDown' && e.shiftKey) { e.preventDefault(); if(selIdx < filtered.length - 1) selectRecord(selIdx + 1); }
+  if (e.code === 'KeyD' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); btnToggle.click(); }
+  if (e.code === 'KeyS' && (e.metaKey || e.ctrlKey) && e.shiftKey) { e.preventDefault(); $('#btnScreenshot').click(); }
+  if (e.code === 'Escape' && document.body.classList.contains('screenshot-mode')) { $('#btnExitScreenshot').click(); }
+});
+
+window.addEventListener('beforeunload', () => { if(rafId) cancelAnimationFrame(rafId); });
+</script>
+</body>
+</html>
