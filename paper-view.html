@@ -336,14 +336,9 @@ body {
 }
 
 .global-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-}
-
-.global-grid.has-primary {
-  grid-template-areas: "primary primary primary primary";
-  grid-template-columns: repeat(4, 1fr);
 }
 
 .g-field {
@@ -353,12 +348,28 @@ body {
   border-left: 3px solid var(--c1);
 }
 
-.g-field.primary {
-  grid-column: 1 / -1;
-  background: linear-gradient(135deg, #eef0ff 0%, #f0eefe 100%);
-  border-left: none;
-  border: 1px solid #d5d7f0;
+.g-field.full {
+  background: linear-gradient(135deg, #f7f8ff 0%, #faf7fe 100%);
+  border: 1px solid #e2e4f3;
+  border-left: 4px solid var(--c1);
   padding: 12px 16px;
+}
+
+.g-field.primary {
+  background: linear-gradient(135deg, #eef0ff 0%, #f0eefe 100%);
+  border: 1px solid #d5d7f0;
+  border-left: 4px solid var(--accent);
+  padding: 14px 18px;
+}
+
+.g-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .g-row { grid-template-columns: 1fr; }
 }
 
 .g-field-label {
@@ -586,8 +597,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.seg-action-block { margin-bottom: 12px; }
+
+.seg-action-block .seg-field-label { margin-bottom: 6px; }
+
 .seg-action {
-  margin-bottom: 12px;
   padding: 10px 14px;
   color: #fff;
   border-radius: var(--radius-sm);
@@ -1071,30 +1085,52 @@ video.addEventListener('loadedmetadata', () => { $('#durTime').textContent = fmt
 video.addEventListener('error', () => { $('#videoError').style.display = 'block'; });
 
 // ── Render Global Fields (adaptive) ──
+const SHORT_FIELDS = new Set(['global_lighting', 'video_style', 'camera_perspective']);
+
 function renderGlobalFields() {
   const grid = $('#globalGrid');
-  if (!caption) { grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);grid-column:1/-1">No caption data</div>'; return; }
+  if (!caption) { grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No caption data</div>'; return; }
 
   const allKeys = Object.keys(caption).filter(k => k !== 'segments' && caption[k]);
 
-  const sortedKeys = [...allKeys].sort((a, b) => {
+  const sortFn = (a, b) => {
     const ai = FIELD_ORDER.indexOf(a.toLowerCase());
     const bi = FIELD_ORDER.indexOf(b.toLowerCase());
     if (ai === -1 && bi === -1) return 0;
     if (ai === -1) return 1;
     if (bi === -1) return -1;
     return ai - bi;
-  });
+  };
+
+  const longKeys = allKeys.filter(k => !SHORT_FIELDS.has(k.toLowerCase())).sort(sortFn);
+  const shortKeys = allKeys.filter(k => SHORT_FIELDS.has(k.toLowerCase())).sort(sortFn);
 
   let html = '';
-  sortedKeys.forEach((key, i) => {
+
+  longKeys.forEach((key, i) => {
     const isPrimary = key.toLowerCase() === PRIMARY_FIELD;
     const color = SEG_COLORS[i % SEG_COLORS.length];
-    html += `<div class="g-field${isPrimary ? ' primary' : ''}" style="${isPrimary ? '' : 'border-left-color:' + color}">`;
-    html += `<div class="g-field-label" style="${isPrimary ? '' : 'color:' + color}">${fieldLabel(key)}</div>`;
-    html += `<div class="g-field-value">${escapeHTML(caption[key])}</div>`;
-    html += '</div>';
+    const cls = isPrimary ? 'g-field primary' : 'g-field full';
+    const style = isPrimary ? '' : `border-left-color:${color}`;
+    const labelStyle = isPrimary ? `color:${SEG_COLORS[0]}` : `color:${color}`;
+    html += `<div class="${cls}" style="${style}">
+      <div class="g-field-label" style="${labelStyle}">${fieldLabel(key)}</div>
+      <div class="g-field-value">${escapeHTML(caption[key])}</div>
+    </div>`;
   });
+
+  if (shortKeys.length) {
+    html += '<div class="g-row">';
+    shortKeys.forEach((key, i) => {
+      const ci = longKeys.length + i;
+      const color = SEG_COLORS[ci % SEG_COLORS.length];
+      html += `<div class="g-field" style="border-left-color:${color}">
+        <div class="g-field-label" style="color:${color}">${fieldLabel(key)}</div>
+        <div class="g-field-value">${escapeHTML(caption[key])}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
 
   grid.innerHTML = html;
 }
@@ -1142,7 +1178,10 @@ function renderCurrentSegment(idx) {
         </span>
         <span class="seg-time">${fmtTime(s)} — ${fmtTime(e)}</span>
       </div>
-      ${seg.action_label ? `<div class="seg-action" style="background:${color}">${escapeHTML(seg.action_label)}</div>` : ''}
+      ${seg.action_label ? `<div class="seg-action-block">
+        <div class="seg-field-label" style="color:${color}">Action Label</div>
+        <div class="seg-action" style="background:${color}">${escapeHTML(seg.action_label)}</div>
+      </div>` : ''}
       <div class="seg-body">${capFields || '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px">No caption fields</div>'}</div>
       <div class="seg-nav">
         <button class="btn" id="btnSegPrev" ${idx<=0?'disabled':''}>&#x25C0; Prev Seg</button>
